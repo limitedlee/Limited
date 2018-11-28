@@ -17,6 +17,7 @@ namespace Limited.Gateway.Middleware
         private readonly IHostingEnvironment env;
         private readonly RequestDelegate next;
         private ILogger<RequestCheckMiddleware> logger;
+        private ICache cache;
 
         /// <summary>
         /// </summary>
@@ -24,11 +25,13 @@ namespace Limited.Gateway.Middleware
         /// <param name="env"></param>
         public RequestCheckMiddleware(RequestDelegate next,
             IHostingEnvironment env,
-            ILogger<RequestCheckMiddleware> logger)
+            ILogger<RequestCheckMiddleware> logger,
+            ICache cache)
         {
             this.next = next;
             this.env = env;
             this.logger = logger;
+            this.cache = cache;
         }
 
         public async Task Invoke(HttpContext context)
@@ -54,11 +57,9 @@ namespace Limited.Gateway.Middleware
 
                 #region check request is repeat
 
-                var cache = new RedisCache();
-
                 var key = $"sn-{request.Headers["sn"]}";
 
-                if (cache.Exists(key))
+                if (await cache.Exists(key))
                 {
                     context.Response.StatusCode = 406;
                     await context.Response.WriteAsync("重复请求");
@@ -71,7 +72,7 @@ namespace Limited.Gateway.Middleware
                         Data = "0",
                         CacheTime = new TimeSpan(0, timeout, 0)
                     };
-                    cache.SetAsync(node);
+                    await cache.Set(node);
                 }
 
                 await next(context);
@@ -93,78 +94,6 @@ namespace Limited.Gateway.Middleware
             context.Response.StatusCode = 400;
             context.Response.WriteAsync(message);
             return false;
-        }
-
-        private bool Check(HttpContext context)
-        {
-            var request = context.Request;
-            if (request.Method.ToLower() == "post")
-            {
-                if (!request.Headers.ContainsKey("sn"))
-                {
-                    var message = "Post请求Header必须指定流水号 sn";
-                    return BadRequest(context, message);
-                }
-
-                if (!request.Headers.ContainsKey("timestamp"))
-                {
-                    var message = "Post请求Header必须指定时间戳 timestamp";
-                    return BadRequest(context, message);
-                }
-
-                if (!request.Headers.ContainsKey("ua"))
-                {
-                    var message = "Post请求Header必须指定UserAgent ua";
-                    return BadRequest(context, message);
-                }
-
-                if (!request.Headers.ContainsKey("source"))
-                {
-                    var message = "Post请求Header必须指定SourceId SourceId";
-                    return BadRequest(context, message);
-                }
-
-
-                #region check request is expired
-
-                DateTime requestTime = ConvertStringToDateTime(request.Headers["timestamp"].ToString().SafeToLong());
-
-                //define time out -- 设置过期时间
-                var timeout = 30;
-
-                //过期时间
-                if (requestTime < DateTime.Now.AddMinutes(-timeout) || requestTime > DateTime.Now.AddMinutes(timeout))
-                {
-                    var message = "请求已过期";
-                    return BadRequest(context, message);
-                }
-
-                #endregion
-
-                #region check request is repeat
-
-                var redis = new RedisCache();
-
-                if (redis.Exists($"sn-{request.Headers["sn"]}"))
-                {
-                    var message = "重复请求";
-                    return BadRequest(context, message);
-                }
-                else
-                {
-                    var node = new CacheNode<string>()
-                    {
-                        Key = $"sn-{request.Headers["sn"]}",
-                        Data = "0",
-                        CacheTime = new TimeSpan(0, timeout, 0)
-                    };
-                    redis.SetAsync(node);
-                }
-
-                #endregion
-            }
-
-            return true;
         }
 
         private DateTime ConvertStringToDateTime(long timeStamp)

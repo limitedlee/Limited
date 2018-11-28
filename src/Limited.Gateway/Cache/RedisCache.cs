@@ -90,240 +90,51 @@ namespace Limited.Gateway.Cache
         }
     }
 
-    /// <summary>
-    /// Redis缓存
-    /// </summary>
-    public class RedisCache
+    public class RedisCache : ICache
     {
-        /// <summary>
-        /// 判断key是否存在
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public bool Exists(string key)
-        {
-            var db = CacheConnection.CreateInstance().Database;
-            return db.KeyExists(key);
-        }
-
-        /// <summary>
-        /// 判断key是否存在
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public async Task<bool> ExistsAsync(string key)
+        public async Task<bool> Exists(string key)
         {
             var db = CacheConnection.CreateInstance().Database;
             return await db.KeyExistsAsync(key);
         }
 
-        /// <summary>
-        /// 设置缓存,数据类型为String
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="node"></param>
-        /// <returns></returns>
-        public bool Set<T>(CacheNode<T> node)
-        {
-            var db = CacheConnection.CreateInstance().Database;
-            var json = JsonConvert.SerializeObject(node.Data);
-
-            if (node.CacheTime != default(TimeSpan))
-            {
-                return db.StringSet(node.Key, json, node.CacheTime);
-            }
-            else
-            {
-                return db.StringSet(node.Key, json);
-            }
-        }
-
-        /// <summary>
-        /// 设置缓存,数据类型为String
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="node"></param>
-        /// <returns></returns>
-        public async Task<bool> SetAsync<T>(CacheNode<T> node)
-        {
-            var db = CacheConnection.CreateInstance().Database;
-            var json = JsonConvert.SerializeObject(node.Data);
-
-            if (node.CacheTime != default(TimeSpan))
-            {
-                return await db.StringSetAsync(node.Key, json, node.CacheTime);
-            }
-            else
-            {
-                return await db.StringSetAsync(node.Key, json);
-            }
-        }
-
-        /// <summary>
-        /// 批量设置缓存,数据类型为String
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="nodes"></param>
-        /// <returns></returns>
-        public List<bool> Set<T>(List<CacheNode<T>> nodes)
-        {
-            var db = CacheConnection.CreateInstance().Database;
-
-            var batch = db.CreateBatch();
-
-            var tasks = new List<Task<bool>>();
-
-            for (var m = 0; m < nodes.Count; m++)
-            {
-                var json = JsonConvert.SerializeObject(nodes[m].Data);
-
-                if (nodes[m].CacheTime != default(TimeSpan))
-                {
-                    tasks.Add(batch.StringSetAsync(nodes[m].Key, json, nodes[m].CacheTime));
-                }
-                else
-                {
-                    tasks.Add(batch.StringSetAsync(nodes[m].Key, json));
-                }
-            }
-
-            batch.Execute();
-
-            Task.WaitAll(tasks.ToArray());
-
-            var result = new List<bool>();
-            foreach (var t in tasks)
-            {
-                result.Add(t.Result);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// 批量设置缓存,数据类型为String
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="nodes"></param>
-        /// <returns></returns>
-        public async Task SetAsync<T>(List<CacheNode<T>> nodes)
-        {
-            await Task.Run(() =>
-            {
-                var db = CacheConnection.CreateInstance().Database;
-                var batch = db.CreateBatch();
-                for (var m = 0; m < nodes.Count; m++)
-                {
-                    var json = JsonConvert.SerializeObject(nodes[m].Data);
-
-                    if (nodes[m].CacheTime != default(TimeSpan))
-                    {
-                        batch.StringSetAsync(nodes[m].Key, json, nodes[m].CacheTime);
-                    }
-                    else
-                    {
-                        batch.StringSetAsync(nodes[m].Key, json);
-                    }
-                }
-                batch.Execute();
-            });
-        }
-
-        /// <summary>
-        /// 设置缓存,数据类型为Hash
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="node"></param>
-        /// <returns></returns>
-        public async Task SetHashAsync<T>(CacheNode<T> node)
-        {
-            await Task.Run(() =>
-            {
-                var db = CacheConnection.CreateInstance().Database;
-                var batch = db.CreateBatch();
-                var maps = ToMap(node.Data);
-
-                if (node.CacheTime != default(TimeSpan))
-                {
-                    var currentTime = DateTime.Now;
-                    maps.Add("_ExpiryTime_", currentTime.Add(node.CacheTime).ToString());
-                }
-
-                foreach (var map in maps)
-                {
-                    batch.HashSetAsync(node.Key, map.Key, map.Value);
-                }
-
-                batch.Execute();
-            });
-        }
-
-        /// <summary>
-        /// 批量设置缓存,数据类型为Hash,切莫一次性缓存大量数据
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="nodes"></param>
-        /// <returns></returns>
-        public async Task SetHashAsync<T>(List<CacheNode<T>> nodes)
-        {
-            if (nodes.Count > 65535)
-            {
-                throw new Exception("Hi guys, i can't digest all those data at one time! may be you can try 'SetAsync' ");
-            }
-
-            await Task.Run(() =>
-            {
-                var db = CacheConnection.CreateInstance().Database;
-                var batch = db.CreateBatch();
-                var currentTime = DateTime.Now;
-                for (var m = 0; m < nodes.Count; m++)
-                {
-                    var maps = ToMap(nodes[m].Data);
-
-                    if (nodes[m].CacheTime != default(TimeSpan))
-                    {
-                        maps.Add("_ExpiryTime_", currentTime.Add(nodes[m].CacheTime).ToString());
-                    }
-
-                    foreach (var map in maps)
-                    {
-                        batch.HashSetAsync(nodes[m].Key, map.Key, map.Value);
-                    }
-                }
-                batch.Execute();
-            });
-        }
-
-        /// <summary>
-        /// 获取缓存,数据类型为String
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public string Get(string key)
-        {
-            var db = CacheConnection.CreateInstance().Database;
-            var result = db.StringGet(key);
-            return result;
-        }
-
-        /// <summary>
-        /// 获取缓存,数据类型为String
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public async Task<string> GetAsync(string key)
+        public async Task<string> Get(string key)
         {
             var db = CacheConnection.CreateInstance().Database;
             var result = await db.StringGetAsync(key);
             return result;
         }
 
-        /// <summary>
-        /// 获取缓存,数据类型为Hash
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public async Task<Dictionary<string, string>> GetHashAsync(string key)
+        public async Task<List<string>> Get(List<string> keys)
+        {
+            var list = await Task.Run(() =>
+            {
+                var db = CacheConnection.CreateInstance().Database;
+                var batch = db.CreateBatch();
+
+                List<Task<RedisValue>> tasks = new List<Task<RedisValue>>();
+
+                for (var m = 0; m < keys.Count; m++)
+                {
+                    tasks.Add(batch.StringGetAsync(keys[m]));
+                }
+                batch.Execute();
+
+                Task.WhenAll(tasks.ToArray());
+
+                var result = new List<string>();
+                foreach (var task in tasks)
+                {
+                    result.Add(task.Result.ToString());
+                }
+
+                return result;
+            });
+
+            return list;
+        }
+
+        public async Task<Dictionary<string, string>> GetHash(string key)
         {
             var items = new Dictionary<string, string>();
 
@@ -363,13 +174,7 @@ namespace Limited.Gateway.Cache
             }
         }
 
-        /// <summary>
-        /// 获取Hash缓存指定字段
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="field"></param>
-        /// <returns></returns>
-        public async Task<string> GetHashAsync(string key, string field)
+        public async Task<string> GetHash(string key, string field)
         {
             var items = new Dictionary<string, string>();
             var db = CacheConnection.CreateInstance().Database;
@@ -394,13 +199,7 @@ namespace Limited.Gateway.Cache
             return value.ToString();
         }
 
-        /// <summary>
-        /// 根据key,批量获取Hash缓存指定字段
-        /// </summary>
-        /// <param name="keys"></param>
-        /// <param name="field"></param>
-        /// <returns></returns>
-        public async Task<List<string>> GetHashAsync(List<string> keys, string field)
+        public async Task<List<string>> GetHash(List<string> keys, string field)
         {
             var db = CacheConnection.CreateInstance().Database;
             var batch = db.CreateBatch();
@@ -466,101 +265,18 @@ namespace Limited.Gateway.Cache
                     removeKeys.Add(keys[m]);
                 }
             }
-            RemoveAsync(removeKeys);
+            Remove(removeKeys);
 
             return result;
         }
 
-        /// <summary>
-        /// 批量获取缓存
-        /// </summary>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        public List<string> Get(List<string> keys)
-        {
-            var db = CacheConnection.CreateInstance().Database;
-            var batch = db.CreateBatch();
-
-            List<Task<RedisValue>> tasks = new List<Task<RedisValue>>();
-
-            for (var m = 0; m < keys.Count; m++)
-            {
-                tasks.Add(batch.StringGetAsync(keys[m]));
-            }
-            batch.Execute();
-            Task.WhenAll(tasks.ToArray());
-
-            var result = new List<string>();
-            foreach (var task in tasks)
-            {
-                result.Add(task.Result.ToString());
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// 批量获取缓存
-        /// </summary>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        public async Task<List<string>> GetAsync(List<string> keys)
-        {
-            var list = await Task.Run(() =>
-            {
-                var db = CacheConnection.CreateInstance().Database;
-                var batch = db.CreateBatch();
-
-                List<Task<RedisValue>> tasks = new List<Task<RedisValue>>();
-
-                for (var m = 0; m < keys.Count; m++)
-                {
-                    tasks.Add(batch.StringGetAsync(keys[m]));
-                }
-                batch.Execute();
-
-                Task.WhenAll(tasks.ToArray());
-
-                var result = new List<string>();
-                foreach (var task in tasks)
-                {
-                    result.Add(task.Result.ToString());
-                }
-
-                return result;
-            });
-
-            return list;
-        }
-
-        /// <summary>
-        /// 删除缓存
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public bool Remove(string key)
-        {
-            var db = CacheConnection.CreateInstance().Database;
-            return db.KeyDelete(key);
-        }
-
-        /// <summary>
-        /// 删除缓存
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public async Task<bool> RemoveAsync(string key)
+        public async Task<bool> Remove(string key)
         {
             var db = CacheConnection.CreateInstance().Database;
             return await db.KeyDeleteAsync(key);
         }
 
-        /// <summary>
-        /// 批量获取缓存
-        /// </summary>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        public List<bool> Remove(List<string> keys)
+        public async Task<List<bool>> Remove(List<string> keys)
         {
             var db = CacheConnection.CreateInstance().Database;
             var batch = db.CreateBatch();
@@ -584,38 +300,127 @@ namespace Limited.Gateway.Cache
             return result;
         }
 
-        /// <summary>
-        /// 批量获取缓存
-        /// </summary>
-        /// <param name="keys"></param>
-        /// <returns></returns>
-        public async Task<List<bool>> RemoveAsync(List<string> keys)
+        public async Task<bool> Set<T>(CacheNode<T> node)
         {
-            var list = await Task.Run(() =>
+            var db = CacheConnection.CreateInstance().Database;
+            var json = JsonConvert.SerializeObject(node.Data);
+
+            if (node.CacheTime != default)
+            {
+                return await db.StringSetAsync(node.Key, json, node.CacheTime);
+            }
+            else
+            {
+                return await db.StringSetAsync(node.Key, json);
+            }
+        }
+
+        public async Task<bool> Set<T>(List<CacheNode<T>> nodes)
+        {
+            try
             {
                 var db = CacheConnection.CreateInstance().Database;
                 var batch = db.CreateBatch();
 
                 var tasks = new List<Task<bool>>();
-
-                foreach (var key in keys)
+                for (var m = 0; m < nodes.Count; m++)
                 {
-                    tasks.Add(batch.KeyDeleteAsync(key));
+                    var json = JsonConvert.SerializeObject(nodes[m].Data);
+                    if (nodes[m].CacheTime != default(TimeSpan))
+                    {
+                        tasks.Add(batch.StringSetAsync(nodes[m].Key, json, nodes[m].CacheTime));
+                    }
+                    else
+                    {
+                        tasks.Add(batch.StringSetAsync(nodes[m].Key, json));
+                    }
                 }
+
                 batch.Execute();
+                Task.WaitAll(tasks.ToArray());
+                return true;
+            }
+            catch (Exception exp)
+            {
+                return false;
+            }
+        }
 
-                Task.WhenAll(tasks.ToArray());
-
-                var result = new List<bool>();
-                foreach (var t in tasks)
+        public async Task<bool> SetHash<T>(CacheNode<T> node)
+        {
+            Task<bool> task = Task.Factory.StartNew(() =>
+            {
+                try
                 {
-                    result.Add(t.Result);
-                }
+                    var db = CacheConnection.CreateInstance().Database;
+                    var batch = db.CreateBatch();
+                    var maps = ToMap(node.Data);
 
-                return result;
+                    if (node.CacheTime != default)
+                    {
+                        var currentTime = DateTime.Now;
+                        maps.Add("_ExpiryTime_", currentTime.Add(node.CacheTime).ToString());
+                    }
+
+                    foreach (var map in maps)
+                    {
+                        batch.HashSetAsync(node.Key, map.Key, map.Value);
+                    }
+
+                    batch.Execute();
+
+                    return true;
+                }
+                catch (Exception exp)
+                {
+                    return false;
+                }
+            });
+            await Task.WhenAll(task);
+            return task.Result;
+        }
+
+        public async Task<bool> SetHash<T>(List<CacheNode<T>> nodes)
+        {
+            if (nodes.Count > 65535)
+            {
+                throw new Exception("Hi guys, i can't digest all those data at one time! may be you can try 'SetAsync' ");
+            }
+
+            Task<bool> task = Task.Factory.StartNew(() => 
+            {
+
+                try
+                {
+                    var db = CacheConnection.CreateInstance().Database;
+                    var batch = db.CreateBatch();
+                    var currentTime = DateTime.Now;
+                    for (var m = 0; m < nodes.Count; m++)
+                    {
+                        var maps = ToMap(nodes[m].Data);
+
+                        if (nodes[m].CacheTime != default(TimeSpan))
+                        {
+                            maps.Add("_ExpiryTime_", currentTime.Add(nodes[m].CacheTime).ToString());
+                        }
+
+                        foreach (var map in maps)
+                        {
+                            batch.HashSetAsync(nodes[m].Key, map.Key, map.Value);
+                        }
+                    }
+                    batch.Execute();
+                    return true;
+                }
+                catch (Exception exp)
+                {
+                    return false;
+                }
             });
 
-            return list;
+             task.Wait();
+
+            return task.Result;
         }
 
         private Dictionary<string, string> ToMap(Object o)

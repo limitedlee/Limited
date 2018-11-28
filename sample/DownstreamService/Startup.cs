@@ -42,7 +42,7 @@ namespace DownstreamService
                 app.UseHsts();
             }
 
-            app.UseLmtGateway();
+            app.UseLimitedGateway();
 
             //app.UseHttpsRedirection();
             app.UseMvc();
