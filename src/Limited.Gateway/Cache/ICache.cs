@@ -29,6 +29,6 @@ namespace Limited.Gateway.Cache
 
         Task<bool> Remove(string key);
 
-        Task<List<bool>> Remove(List<string> keys);
+        Task<bool> Remove(List<string> keys);
     }
 }

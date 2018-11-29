@@ -43,7 +43,7 @@ namespace ApiGateway
             }
 
             app.UseLimitedGateway();
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
             app.UseMvc();
         }
     }

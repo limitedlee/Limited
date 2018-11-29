@@ -276,7 +276,7 @@ namespace Limited.Gateway.Cache
             return await db.KeyDeleteAsync(key);
         }
 
-        public async Task<List<bool>> Remove(List<string> keys)
+        public async Task<bool> Remove(List<string> keys)
         {
             var db = CacheConnection.CreateInstance().Database;
             var batch = db.CreateBatch();
@@ -297,7 +297,7 @@ namespace Limited.Gateway.Cache
                 result.Add(t.Result);
             }
 
-            return result;
+            return true;
         }
 
         public async Task<bool> Set<T>(CacheNode<T> node)
