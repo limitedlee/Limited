@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Limited.Gateway.Cache;
+using Limited.Gateway.Options;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ApiGateway.Controllers
@@ -12,45 +13,50 @@ namespace ApiGateway.Controllers
     public class ValuesController : ControllerBase
     {
         private ICache cache;
+        private Route route;
 
-        public ValuesController(ICache _cache)
+        public ValuesController(ICache _cache, Route _route)
         {
             cache = _cache;
+            route = _route;
         }
 
         // GET api/values
         [HttpGet]
         public async Task<ActionResult<IEnumerable<string>>> Get()
         {
+            var items = new List<RouteOption>();
 
-            var nodes = new List<CacheNode<string>>();
-
-            for (var m = 0; m < 50; m++)
+            var baseRoute = new RouteOption()
             {
-                var node = new CacheNode<string>()
-                {
-                    CacheTime = new TimeSpan(0, 10, 0),
-                    Data = "Hi,li fa sheng",
-                    Key = "baseApi-member-id-" + m
-                };
+                SourcePathRegex = @"BaseApi/\w*",
+                TargetService = "base",
+                TargetPathRegex = @"base/\w*",
+                Version = "1.0"
+            };
 
-                nodes.Add(node);
-            }
+            items.Add(baseRoute);
 
-
-            var strs = new List<string>();
-            for (var m = 10; m < 15; m++)
+            var orderRoute = new RouteOption()
             {
-                strs.Add("baseApi-member-id-" + m);
-            }
+                SourcePathRegex = @"OrderApi/\w*",
+                TargetService = "Order",
+                TargetPathRegex = @"Order/\w*",
+                Version = "1.0"
+            };
+            items.Add(orderRoute);
 
-            var list = await cache.Get(strs);
 
-             //await cache.Set(nodes);
-
-            //var json = await cache.Get("baseApi/member/id");
+            await route.Push(items);
 
             return Ok("111");
         }
+    }
+
+    public class Person
+    {
+        public string Name { get; set; }
+
+        public int Age { get; set; }
     }
 }

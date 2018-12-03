@@ -8,6 +8,8 @@ using Consul;
 using Microsoft.Extensions.Configuration;
 using System.Linq;
 using System.Collections.Concurrent;
+using Newtonsoft.Json;
+using System.Reflection;
 
 namespace Limited.Gateway.Cache
 {
@@ -35,9 +37,12 @@ namespace Limited.Gateway.Cache
         {
             var kvClient = ConsulCacheConnection.CreateInstance().Client.KV;
             var result = await kvClient.Get(key);
-            return ToResult<string>(result);
+            if (result.Response == null)
+            {
+                return default;
+            }
+            return ToResult<string>(result.Response);
         }
-
 
         //done
         public async Task<List<string>> Get(List<string> keys)
@@ -55,24 +60,75 @@ namespace Limited.Gateway.Cache
 
             foreach (var task in tasks)
             {
-                list.Add(ToResult<string>(task.Result));
+                if (task.Result.Response == null)
+                {
+                    list.Add(default);
+                }
+                else
+                {
+                    list.Add(ToResult<string>(task.Result.Response));
+                }
             }
             return list;
         }
 
+        //done
         public async Task<Dictionary<string, string>> GetHash(string key)
         {
-            throw new NotImplementedException();
+            var kvClient = ConsulCacheConnection.CreateInstance().Client.KV;
+            var result = await kvClient.List(key);
+            //return ToResult<string>(result);
+            if (result.Response == null)
+            {
+                return new Dictionary<string, string>();
+            }
+
+            var items = new Dictionary<string, string>();
+            foreach (var kvp in result.Response)
+            {
+                var value = Encoding.UTF8.GetString(kvp.Value); ;
+                if (value != null)
+                {
+                    items.Add(kvp.Key, value);
+                }
+            }
+            return items;
         }
 
+        //done
         public async Task<string> GetHash(string key, string field)
         {
-            throw new NotImplementedException();
+            var kvClient = ConsulCacheConnection.CreateInstance().Client.KV;
+            var result = await kvClient.Get($"{key}/{field}");
+            if (result.Response == null)
+            {
+                return default;
+            }
+            return Encoding.UTF8.GetString(result.Response.Value);
         }
 
+        //done
         public async Task<List<string>> GetHash(List<string> keys, string field)
         {
-            throw new NotImplementedException();
+            var kvClient = ConsulCacheConnection.CreateInstance().Client.KV;
+
+            var tasks = new List<Task<QueryResult<KVPair>>>();
+
+            foreach (var key in keys)
+            {
+                tasks.Add(kvClient.Get($"{key}/{field}"));
+            }
+
+            Task.WaitAll(tasks.ToArray());
+
+            var list = new List<string>();
+            foreach (var task in tasks)
+            {
+                var json = Encoding.UTF8.GetString(task.Result.Response.Value);
+                list.Add(json);
+            }
+
+            return list;
         }
 
         //done
@@ -103,14 +159,14 @@ namespace Limited.Gateway.Cache
 
             var cacheValue = new CacheValue<T>()
             {
-                Vaule = node.Data
+                Value = node.Data
             };
             if (node.CacheTime != default)
             {
                 cacheValue.ExpiryTime = DateTime.Now.Add(node.CacheTime);
             }
 
-            var dataBuffer = Encoding.UTF8.GetBytes(Newtonsoft.Json.JsonConvert.SerializeObject(cacheValue));
+            var dataBuffer = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(cacheValue));
 
             var kvp = new KVPair(node.Key)
             {
@@ -131,7 +187,7 @@ namespace Limited.Gateway.Cache
              {
                  var cacheValue = new CacheValue<T>()
                  {
-                     Vaule = node.Data
+                     Value = node.Data
                  };
                  if (node.CacheTime != default)
                  {
@@ -152,42 +208,136 @@ namespace Limited.Gateway.Cache
                 tasks.Add(kvClient.Put(kvp));
             }
 
-           // Task.WaitAll(tasks.ToArray());
+            // Task.WaitAll(tasks.ToArray());
             return true;
         }
 
+        //done
         public async Task<bool> SetHash<T>(CacheNode<T> node)
         {
-            throw new NotImplementedException();
-        }
-
-        public async Task<bool> SetHash<T>(List<CacheNode<T>> nodes)
-        {
-            throw new NotImplementedException();
-        }
-
-        private T ToResult<T>(QueryResult<KVPair> result)
-        {
-            if (result == null)
+            if (node.CacheTime != default)
             {
-                return default;
+                throw new Exception("nonsupport 'CacheTime' in Hash!");
+            }
+            if (node.Key.Substring(node.Key.Length - 1, 1) == "/")
+            {
+                throw new Exception("nonsupport the key has '/' in the end");
             }
 
-            var json = Encoding.UTF8.GetString(result.Response.Value);
-            var nodeVaule = Newtonsoft.Json.JsonConvert.DeserializeObject<CacheValue<T>>(json);
-            if (nodeVaule.ExpiryTime == null)
+            try
             {
-                return nodeVaule.Vaule;
+                var kvClient = ConsulCacheConnection.CreateInstance().Client.KV;
+                var dic = ToMap(node.Data);
+                Parallel.ForEach(dic, x =>
+                {
+                    var dataBuffer = Encoding.UTF8.GetBytes(x.Value);
+                    var kvp = new KVPair($"{node.Key}/{x.Key}")
+                    {
+                        Value = dataBuffer
+                    };
+
+                    var result = kvClient.Put(kvp);
+                });
+                return true;
+            }
+            catch (Exception exp)
+            {
+                return false;
+            }
+        }
+
+        //done
+        public async Task<bool> SetHash<T>(List<CacheNode<T>> nodes)
+        {
+            if (nodes.Any(x => x.CacheTime != default))
+            {
+                throw new Exception("nonsupport 'CacheTime' in Hash!");
+            }
+
+            var kvClient = ConsulCacheConnection.CreateInstance().Client.KV;
+            var kvps = new ConcurrentBag<KVPair>();
+
+            try
+            {
+                Parallel.ForEach(nodes, node =>
+                {
+                    var dic = ToMap(node.Data);
+                    Parallel.ForEach(dic, x =>
+                    {
+                        var dataBuffer = Encoding.UTF8.GetBytes(x.Value);
+                        var kvp = new KVPair($"{node.Key}/{x.Key}")
+                        {
+                            Value = dataBuffer
+                        };
+
+                        kvps.Add(kvp);
+                    });
+                });
+
+
+                var tasks = new List<Task<WriteResult<bool>>>();
+                foreach (var kvp in kvps)
+                {
+                    tasks.Add(kvClient.Put(kvp));
+                }
+                return true;
+            }
+            catch (Exception exp)
+            {
+                return false;
+            }
+        }
+
+        private string ToResult<T>(KVPair result)
+        {
+            var json = Encoding.UTF8.GetString(result.Value);
+            dynamic nodeVaule = JsonConvert.DeserializeObject(json);
+            if (nodeVaule.ExpiryTime == null|| nodeVaule.ExpiryTime==DateTime.MinValue)
+            {
+                return nodeVaule.Value.ToString();
             }
             if (nodeVaule.ExpiryTime >= DateTime.Now)
             {
-                return nodeVaule.Vaule;
+                return nodeVaule.Value;
             }
             else
             {
-                Remove(result.Response.Key);
+                Remove(result.Key);
                 return default;
             }
+        }
+
+        private Dictionary<string, string> ToMap(Object o)
+        {
+            Dictionary<string, string> map = new Dictionary<string, string>();
+
+            Type t = o.GetType();
+
+            PropertyInfo[] pi = t.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (PropertyInfo p in pi)
+            {
+                MethodInfo mi = p.GetGetMethod();
+
+                if (mi != null && mi.IsPublic)
+                {
+                    var value = mi.Invoke(o, new Object[] { });
+
+                    var valueString = string.Empty;
+                    if (value is ValueType || value is string)
+                    {
+                        valueString = value.ToString();
+                    }
+                    else
+                    {
+                        valueString = JsonConvert.SerializeObject(value);
+                    }
+
+                    map.Add(p.Name, valueString);
+                }
+            }
+
+            return map;
         }
     }
 
@@ -248,7 +398,7 @@ namespace Limited.Gateway.Cache
 
     sealed class CacheValue<T>
     {
-        public T Vaule { get; set; }
+        public T Value { get; set; }
 
         public DateTime ExpiryTime { get; set; }
     }

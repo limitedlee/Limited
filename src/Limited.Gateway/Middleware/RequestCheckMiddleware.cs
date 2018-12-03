@@ -32,6 +32,7 @@ namespace Limited.Gateway.Middleware
             this.env = env;
             this.logger = logger;
             this.cache = cache;
+            Console.WriteLine("RouteMiddleware init");
         }
 
         public async Task Invoke(HttpContext context)

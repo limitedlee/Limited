@@ -2,6 +2,7 @@
 using Limited.Gateway.Cache;
 using Limited.Gateway.Extensions;
 using Limited.Gateway.Middleware;
+using Limited.Gateway.Options;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,11 +42,14 @@ namespace Limited.Gateway
             {
                 throw new ConfigException($"nonsupport '{config.CacheProvider}' cache provider ");
             }
+
+            services.AddSingleton<Route>();
         }
 
         public static void UseLimitedGateway(this IApplicationBuilder app)
         {
             app.UseMiddleware<RequestCheckMiddleware>();
+            app.UseMiddleware<RouteMiddleware>();
         }
     }
 }
