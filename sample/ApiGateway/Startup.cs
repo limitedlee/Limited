@@ -27,7 +27,7 @@ namespace ApiGateway
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            services.AddLimitedGateway();
+            services.AddGateway();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -42,7 +42,7 @@ namespace ApiGateway
                 app.UseHsts();
             }
 
-            app.UseLimitedGateway();
+            app.UseGateway();
             //app.UseHttpsRedirection();
             app.UseMvc();
         }

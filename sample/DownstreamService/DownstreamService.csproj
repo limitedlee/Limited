@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Limited.Gateway\Limited.Gateway.csproj" />
+    <ProjectReference Include="..\..\src\Limited.MicroService\Limited.MicroService.csproj" />
   </ItemGroup>
 
 </Project>

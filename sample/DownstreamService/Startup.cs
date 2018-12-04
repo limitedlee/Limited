@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Limited.MicroService;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -10,8 +11,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
-using Limited.Gateway;
 
 namespace DownstreamService
 {
@@ -31,7 +30,7 @@ namespace DownstreamService
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime lifetime)
         {
             if (env.IsDevelopment())
             {
@@ -42,7 +41,7 @@ namespace DownstreamService
                 app.UseHsts();
             }
 
-            app.UseLimitedGateway();
+            app.UseMicroService(lifetime, new ServiceInfo { });
 
             //app.UseHttpsRedirection();
             app.UseMvc();

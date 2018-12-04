@@ -19,7 +19,7 @@ namespace Limited.Gateway.Options
         /// <summary>
         /// 版本
         /// </summary>
-        public string Version { get; set; }
+        public Version Version { get; set; }
 
         /// <summary>
         /// 目标服务

@@ -11,7 +11,7 @@ namespace Limited.Gateway
 {
     public static class GatewayExtensions
     {
-        public static void AddLimitedGateway(this IServiceCollection services)
+        public static void AddGateway(this IServiceCollection services)
         {
             var configBuilder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
             var configuration = configBuilder.Build();
@@ -43,13 +43,13 @@ namespace Limited.Gateway
                 throw new ConfigException($"nonsupport '{config.CacheProvider}' cache provider ");
             }
 
-            services.AddSingleton<Route>();
+            services.AddSingleton<RouteTable>();
         }
 
-        public static void UseLimitedGateway(this IApplicationBuilder app)
+        public static void UseGateway(this IApplicationBuilder app)
         {
             app.UseMiddleware<RequestCheckMiddleware>();
-            app.UseMiddleware<RouteMiddleware>();
+            app.UseMiddleware<RedirectMiddleware>();
         }
     }
 }

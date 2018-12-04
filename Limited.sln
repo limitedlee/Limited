@@ -6,9 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E79BBE30-1149-4C5A-A644-0F44F36CD5A7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sample", "sample", "{7F7034F9-A40F-4ED4-B0DE-BBF6D5DD2EF7}"
-	ProjectSection(SolutionItems) = preProject
-		sample\Consul\RunMe.bat = sample\Consul\RunMe.bat
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiGateway", "sample\ApiGateway\ApiGateway.csproj", "{CB986DDE-3EA0-444B-B833-E3E380C9CBCD}"
 EndProject

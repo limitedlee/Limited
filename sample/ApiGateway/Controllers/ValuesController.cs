@@ -13,9 +13,9 @@ namespace ApiGateway.Controllers
     public class ValuesController : ControllerBase
     {
         private ICache cache;
-        private Route route;
+        private RouteTable route;
 
-        public ValuesController(ICache _cache, Route _route)
+        public ValuesController(ICache _cache, RouteTable _route)
         {
             cache = _cache;
             route = _route;
@@ -32,7 +32,7 @@ namespace ApiGateway.Controllers
                 SourcePathRegex = @"BaseApi/\w*",
                 TargetService = "base",
                 TargetPathRegex = @"base/\w*",
-                Version = "1.0"
+                Version = new Version("1.0")
             };
 
             items.Add(baseRoute);
@@ -42,7 +42,7 @@ namespace ApiGateway.Controllers
                 SourcePathRegex = @"OrderApi/\w*",
                 TargetService = "Order",
                 TargetPathRegex = @"Order/\w*",
-                Version = "1.0"
+                Version = new Version("1.0")
             };
             items.Add(orderRoute);
 

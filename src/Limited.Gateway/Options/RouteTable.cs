@@ -7,16 +7,16 @@ using System.Threading.Tasks;
 
 namespace Limited.Gateway.Options
 {
-    public class Route
+    public class RouteTable
     {
         private ICache cacheProvider;
         public const string RouteCacheKey = "Gateway.RouteConfig.Cache";
-        private static Route route = null;
+        private static RouteTable route = null;
         private static readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1, 1);
 
         public List<RouteOption> Cache { get; set; } = null;
 
-        public Route(ICache _cache)
+        public RouteTable(ICache _cache)
         {
             cacheProvider = _cache;
 

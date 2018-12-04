@@ -16,6 +16,7 @@ namespace Limited.Gateway.Middleware
     {
         private readonly IHostingEnvironment env;
         private readonly RequestDelegate next;
+        //private readonly LimitedRequestDelegate next;
         private ILogger<RequestCheckMiddleware> logger;
         private ICache cache;
 
@@ -23,7 +24,9 @@ namespace Limited.Gateway.Middleware
         /// </summary>
         /// <param name="next"></param>
         /// <param name="env"></param>
-        public RequestCheckMiddleware(RequestDelegate next,
+        public RequestCheckMiddleware(
+            RequestDelegate next,
+            //LimitedRequestDelegate next,
             IHostingEnvironment env,
             ILogger<RequestCheckMiddleware> logger,
             ICache cache)
@@ -37,6 +40,9 @@ namespace Limited.Gateway.Middleware
 
         public async Task Invoke(HttpContext context)
         {
+            var host = new HostString("127.0.0.1", 8000);
+            context.Request.Host = host;
+
             var request = context.Request;
             if (request.Method.ToLower() == "post" && request.Headers.ContainsKey("timestamp") && request.Headers.ContainsKey("sn"))
             {

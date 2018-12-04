@@ -8,13 +8,18 @@ using System.Threading.Tasks;
 
 namespace Limited.Gateway.Middleware
 {
-    public class RouteMiddleware
+    public class RedirectMiddleware
     {
-        private ILogger<RequestCheckMiddleware> logger;
         private readonly RequestDelegate next;
-        private Route route;
+        //private readonly LimitedRequestDelegate next;
+        private ILogger<RequestCheckMiddleware> logger;
+        private RouteTable route;
 
-        public RouteMiddleware(RequestDelegate _next, ILogger<RequestCheckMiddleware> _logger, Route _route)
+        public RedirectMiddleware(
+            RequestDelegate _next,
+            //LimitedRequestDelegate _next, 
+            ILogger<RequestCheckMiddleware> _logger,
+            RouteTable _route)
         {
             logger = _logger;
             next = _next;
@@ -24,6 +29,9 @@ namespace Limited.Gateway.Middleware
 
         public async Task Invoke(HttpContext context)
         {
+
+          //  context.RequestServices.
+
             await next(context);
         }
     }
