@@ -50,6 +50,7 @@ namespace Limited.Gateway.Middleware
 
                 DateTime requestTime = ConvertStringToDateTime(request.Headers["timestamp"].ToString().SafeToLong());
 
+
                 //define time out -- 设置过期时间
                 var timeout = 30;
 
