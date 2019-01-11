@@ -17,7 +17,7 @@ namespace DownstreamService
 {
     public class Startup
     {
-        private readonly ServiceInfo info;
+        private readonly ServiceConfig info;
         private readonly ServiceDiscoveryConfig sdConfig;
         public IConfiguration Configuration { get; }
 
@@ -25,11 +25,11 @@ namespace DownstreamService
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            info = new ServiceInfo
+            info = new ServiceConfig
             {
-                ServiceName = "DownstreamService",
-                Title = "订单服务",
-                Version = new Version(1, 0),
+                Name = "DownstreamService",
+                DisplayName = "订单服务",
+                Version = "1.0",
                 XmlName = "DownstreamService.xml"
             };
 
@@ -62,11 +62,15 @@ namespace DownstreamService
                 app.UseHsts();
             }
 
-            app.UseMicroService(lifetime, (service,config)=> 
+            app.UseMicroService(lifetime, (service, config) =>
             {
-                service = info;
-                config = sdConfig;
-            } );
+                service.Name = info.Name;
+                service.DisplayName = info.DisplayName;
+                service.Version = info.Version;
+                service.XmlName = info.XmlName;
+                config.ServiceAddress=config.ServiceAddress;
+                config.DCAddress = config.DCAddress;
+            });
 
             //app.UseHttpsRedirection();
             app.UseMvc();

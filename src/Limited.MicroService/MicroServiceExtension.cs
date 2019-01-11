@@ -10,18 +10,18 @@ namespace Limited.MicroService
 {
     public static class MicroServiceExtension
     {
-        public static void UseMicroService(this IApplicationBuilder app, IApplicationLifetime lifetime, Action<ServiceInfo, ServiceDiscoveryConfig> action)
+        public static void UseMicroService(this IApplicationBuilder app, IApplicationLifetime lifetime, Action<ServiceConfig, ServiceDiscoveryConfig> action)
         {
             //读取配置文件
             var configBuilder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
             var config = configBuilder.Build();
 
-            ServiceInfo serviceInfo = new ServiceInfo();
+            ServiceConfig serviceInfo = new ServiceConfig();
             ServiceDiscoveryConfig discoveryConfig = new ServiceDiscoveryConfig();
 
             action.Invoke(serviceInfo, discoveryConfig);
 
-            var serviceId = $" {serviceInfo.ServiceName}-{ Guid.NewGuid().To16String()}";
+            var serviceId = $" {serviceInfo.DisplayName}-{ Guid.NewGuid().To16String()}";
             var ip = discoveryConfig.ServiceAddress.Split(':')[0];
             var port = discoveryConfig.ServiceAddress.Split(':')[1];
 
@@ -32,7 +32,7 @@ namespace Limited.MicroService
                     Address = ip,
                     Port = int.Parse(port),
                     ID = serviceId,
-                    Name = serviceInfo.Title,
+                    Name = serviceInfo.DisplayName,
                     Check = new AgentServiceCheck
                     {
                         DeregisterCriticalServiceAfter = TimeSpan.FromSeconds(5),
