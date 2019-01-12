@@ -19,8 +19,11 @@ namespace DownstreamService
             var configBuilder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
             var config = configBuilder.Build();
 
+            var ip = config.GetSection("ServiceAddress").Value.Split(':')[0];
+            var port = config.GetSection("ServiceAddress").Value.Split(':')[1];
+
             return WebHost.CreateDefaultBuilder(args)
-                .UseUrls($"http://0.0.0.0:{config.GetSection("config").Value}")
+                .UseUrls($"http://{ip}:{port}")
                 .UseStartup<Startup>();
         }
     }

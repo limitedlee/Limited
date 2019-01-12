@@ -50,5 +50,10 @@ namespace Limited.MicroService
         /// 本地地址,用于回调
         /// </summary>
         public string LocalAddress { get; set; }
+
+        /// <summary>
+        /// Consul服务地址
+        /// </summary>
+        public string DCAddress { get; set; } = "http://127.0.0.1:8500";
     }
 }

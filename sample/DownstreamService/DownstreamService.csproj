@@ -24,4 +24,10 @@
     <ProjectReference Include="..\..\src\Limited.MicroService\Limited.MicroService.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

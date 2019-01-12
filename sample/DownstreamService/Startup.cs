@@ -17,32 +17,13 @@ namespace DownstreamService
 {
     public class Startup
     {
-        private readonly ServiceConfig info;
-        private readonly ServiceDiscoveryConfig sdConfig;
         public IConfiguration Configuration { get; }
 
 
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            info = new ServiceConfig
-            {
-                Name = "DownstreamService",
-                DisplayName = "订单服务",
-                Version = "1.0",
-                XmlName = "DownstreamService.xml"
-            };
-
-            var address = configuration.GetSection("ServiceAddress").Value;
-
-            sdConfig = new ServiceDiscoveryConfig
-            {
-                // EndPoint = new System.Net.IPEndPoint( new IPAddress( address.Split(":"))
-                ServiceAddress = address
-            };
         }
-
-
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -62,14 +43,13 @@ namespace DownstreamService
                 app.UseHsts();
             }
 
-            app.UseMicroService(lifetime, (service, config) =>
+            app.UseMicroService(lifetime, (service) =>
             {
-                service.Name = info.Name;
-                service.DisplayName = info.DisplayName;
-                service.Version = info.Version;
-                service.XmlName = info.XmlName;
-                config.ServiceAddress=config.ServiceAddress;
-                config.DCAddress = config.DCAddress;
+                service.Name = "DownstreamService";
+                service.DisplayName = "订单服务";
+                service.Version = "1.0";
+                service.XmlName = "DownstreamService.xml";
+                service.LocalAddress = Configuration.GetSection("ServiceAddress").Value;
             });
 
             //app.UseHttpsRedirection();
