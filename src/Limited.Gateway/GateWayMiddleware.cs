@@ -1,24 +1,21 @@
-﻿using Limited.Gateway.Options;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Limited.Gateway.Middleware
+namespace Limited.Gateway
 {
-    public class RedirectMiddleware
+    public class GateWayMiddleware
     {
         private readonly RequestDelegate next;
         //private readonly LimitedRequestDelegate next;
-        private ILogger<RequestCheckMiddleware> logger;
+        private ILogger<GateWayMiddleware> logger;
         private RouteTable route;
 
-        public RedirectMiddleware(
+        public GateWayMiddleware(
             RequestDelegate _next,
             //LimitedRequestDelegate _next, 
-            ILogger<RequestCheckMiddleware> _logger,
+            ILogger<GateWayMiddleware> _logger,
             RouteTable _route)
         {
             logger = _logger;
@@ -30,7 +27,7 @@ namespace Limited.Gateway.Middleware
         public async Task Invoke(HttpContext context)
         {
 
-          //  context.RequestServices.
+            //  context.RequestServices.
 
             await next(context);
         }

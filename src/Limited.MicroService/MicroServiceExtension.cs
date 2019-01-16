@@ -19,7 +19,7 @@ namespace Limited.MicroService
             ServiceConfig serviceInfo = new ServiceConfig();
             action.Invoke(serviceInfo);
 
-            var serviceId = $" {serviceInfo.DisplayName}-{ Guid.NewGuid().To16String()}";
+            var serviceId = $" {serviceInfo.Name}-{ serviceInfo.LocalAddress.Replace(':', '-')}";
             var ip = serviceInfo.LocalAddress.Split(':')[0];
             var port = serviceInfo.LocalAddress.Split(':')[1];
 
@@ -35,7 +35,7 @@ namespace Limited.MicroService
                     {
                         DeregisterCriticalServiceAfter = TimeSpan.FromSeconds(5),
                         HTTP = $"http://{serviceInfo.LocalAddress}/health",//健康检查访问的地址
-                        Interval = TimeSpan.FromSeconds(5),   //健康检查的间隔时间
+                        Interval = TimeSpan.FromSeconds(2),   //健康检查的间隔时间
                         Timeout = TimeSpan.FromSeconds(1),     //多久代表超时
                     },
                 };

@@ -1,16 +1,11 @@
-﻿using Limited.Gateway.Cache;
-using Limited.Gateway.Extensions;
-using Limited.Gateway.Security;
-using Microsoft.ApplicationInsights.AspNetCore.Extensions;
+﻿using Limited.Gateway;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace Limited.Gateway.Middleware
+namespace ApiGateway
 {
     public class RequestCheckMiddleware
     {
@@ -18,7 +13,6 @@ namespace Limited.Gateway.Middleware
         private readonly RequestDelegate next;
         //private readonly LimitedRequestDelegate next;
         private ILogger<RequestCheckMiddleware> logger;
-        private ICache cache;
 
         /// <summary>
         /// </summary>
@@ -28,66 +22,67 @@ namespace Limited.Gateway.Middleware
             RequestDelegate next,
             //LimitedRequestDelegate next,
             IHostingEnvironment env,
-            ILogger<RequestCheckMiddleware> logger,
-            ICache cache)
+            ILogger<RequestCheckMiddleware> logger)
         {
             this.next = next;
             this.env = env;
             this.logger = logger;
-            this.cache = cache;
             Console.WriteLine("RouteMiddleware init");
         }
 
         public async Task Invoke(HttpContext context)
         {
-            var host = new HostString("127.0.0.1", 8000);
-            context.Request.Host = host;
-
             var request = context.Request;
             if (request.Method.ToLower() == "post" && request.Headers.ContainsKey("timestamp") && request.Headers.ContainsKey("sn"))
             {
                 #region check request is expired
 
-                DateTime requestTime = ConvertStringToDateTime(request.Headers["timestamp"].ToString().SafeToLong());
+                if (!long.TryParse(request.Headers["timestamp"].ToString(), out long timestamp))
+                {
+                    context.Response.StatusCode = 400;
+                    context.Response.WriteAsync("timestamp参数不合法");
+                    return;
+                }
 
+                DateTime requestTime = ConvertStringToDateTime(timestamp);
 
                 //define time out -- 设置过期时间
-                var timeout = 30;
+                var timeout = 15;
 
                 //过期时间
                 if (requestTime < DateTime.Now.AddMinutes(-timeout) || requestTime > DateTime.Now.AddMinutes(timeout))
                 {
                     context.Response.StatusCode = 403;
-                    await context.Response.WriteAsync("请求已过期");
+                    context.Response.WriteAsync("请求已过期");
+                    return;
                 }
 
                 #endregion
 
                 #region check request is repeat
 
-                var key = $"sn-{request.Headers["sn"]}";
+                var key = $"gateway/serialnumber/{request.Headers["sn"]}";
 
-                if (await cache.Exists(key))
+                if (await ConsulHelper.Exists(key))
                 {
                     context.Response.StatusCode = 406;
                     await context.Response.WriteAsync("重复请求");
                 }
                 else
                 {
-                    var node = new CacheNode<string>()
+                    var node = new CacheValue<string>()
                     {
-                        Key = key,
-                        Data = "0",
-                        CacheTime = new TimeSpan(0, timeout, 0)
+                        Value = "0",
+                        ExpiryTime = DateTime.Now.AddMinutes(timeout)
                     };
-                    await cache.Set(node);
+                    await ConsulHelper.Set(key, node);
                 }
 
                 await next(context);
 
                 if (context.Response.StatusCode != 200)
                 {
-                    cache.Remove(key);
+                    ConsulHelper.Remove(key);
                 }
                 #endregion
             }

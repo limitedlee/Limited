@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Limited.Gateway.Cache;
-using Limited.Gateway.Options;
+﻿using Limited.Gateway;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ApiGateway.Controllers
 {
@@ -12,12 +10,10 @@ namespace ApiGateway.Controllers
     [ApiController]
     public class ValuesController : ControllerBase
     {
-        private ICache cache;
         private RouteTable route;
 
-        public ValuesController(ICache _cache, RouteTable _route)
+        public ValuesController(RouteTable _route)
         {
-            cache = _cache;
             route = _route;
         }
 

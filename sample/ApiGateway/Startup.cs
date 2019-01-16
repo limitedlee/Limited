@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Limited.Gateway;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Limited.Gateway;
 
 namespace ApiGateway
 {
@@ -42,6 +35,7 @@ namespace ApiGateway
                 app.UseHsts();
             }
 
+            app.UseMiddleware<RequestCheckMiddleware>();
             app.UseGateway();
             //app.UseHttpsRedirection();
             app.UseMvc();
