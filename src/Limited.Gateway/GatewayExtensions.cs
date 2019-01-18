@@ -21,6 +21,8 @@ namespace Limited.Gateway
 
             ConsulUrl = configuration.GetSection("GatewayConfig:ConsulUrl").Value;
             services.AddSingleton<RouteTable>();
+            services.AddTransient<Microsoft.Extensions.Hosting.IHostedService, ServiceMonitorTask>();
+            services.AddHttpClient();
         }
 
         public static void UseGateway(this IApplicationBuilder app)

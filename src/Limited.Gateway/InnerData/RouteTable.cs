@@ -1,5 +1,10 @@
-﻿using System;
+﻿using Consul;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,7 +16,7 @@ namespace Limited.Gateway
         private static RouteTable route = null;
         private static readonly SemaphoreSlim _connectionLock = new SemaphoreSlim(1, 1);
 
-        public List<RouteOption> Cache { get; set; } = null;
+        public ConcurrentBag<RouteOption> Cache { get; set; } = null;
 
         public RouteTable()
         {
@@ -22,15 +27,22 @@ namespace Limited.Gateway
                     _connectionLock.Wait();
                     if (Cache == null)
                     {
-                        Cache = new List<RouteOption>();
+                        Cache = new ConcurrentBag<RouteOption>();
                         var result = ConsulHelper.Client.KV.Get(RouteCacheKey);
                         Task.WaitAny(result);
 
                         if (result.Result.Response != null)
                         {
-                            Cache = Newtonsoft.Json.JsonConvert.DeserializeObject<List<RouteOption>>(result.Result.Response.ToString());
+                            var json = Encoding.UTF8.GetString(result.Result.Response.Value);
+                            var routes = Newtonsoft.Json.JsonConvert.DeserializeObject<List<RouteOption>>(json);
+
+                            Parallel.ForEach(routes, route =>
+                             {
+                                 route.TargetService = route.TargetService.ToLower();
+                                 Cache.Add(route);
+                             });
                         }
-                        Console.WriteLine("route cache init");
+
                     }
                 }
                 finally
@@ -42,13 +54,11 @@ namespace Limited.Gateway
 
         public async Task Push(List<RouteOption> routes)
         {
-            var node = new CacheValue<List<RouteOption>>()
-            {
-                Value = routes,
-                ExpiryTime = DateTime.Now.AddYears(99)
-            };
+            var kvp = new KVPair(RouteCacheKey);
+            var dataBuffer = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(routes));
+            kvp.Value = dataBuffer;
 
-            await ConsulHelper.Set(RouteCacheKey, node);
+            await ConsulHelper.Client.KV.Put(kvp);
         }
     }
 }

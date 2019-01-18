@@ -30,7 +30,7 @@ namespace Limited.MicroService
                     Address = ip,
                     Port = int.Parse(port),
                     ID = serviceId,
-                    Name = serviceInfo.DisplayName,
+                    Name = serviceInfo.Name,
                     Check = new AgentServiceCheck
                     {
                         DeregisterCriticalServiceAfter = TimeSpan.FromSeconds(5),
@@ -54,7 +54,6 @@ namespace Limited.MicroService
             {
                 ab.Run(async context =>
                 {
-                    Console.WriteLine("健康检查" + DateTime.Now);
                     await context.Response.WriteAsync("ok");
                 });
             });

@@ -25,10 +25,10 @@ namespace ApiGateway.Controllers
 
             var baseRoute = new RouteOption()
             {
-                SourcePathRegex = @"BaseApi/\w*",
+                SourcePathRegex = @"/a/{everything}",
                 TargetService = "base",
-                TargetPathRegex = @"base/\w*",
-                Version = new Version("1.0")
+                TargetPathRegex = @"/api/{everything}",
+                Version = "1.0"
             };
 
             items.Add(baseRoute);
@@ -38,7 +38,7 @@ namespace ApiGateway.Controllers
                 SourcePathRegex = @"OrderApi/\w*",
                 TargetService = "Order",
                 TargetPathRegex = @"Order/\w*",
-                Version = new Version("1.0")
+                Version = "1.0"
             };
             items.Add(orderRoute);
 
