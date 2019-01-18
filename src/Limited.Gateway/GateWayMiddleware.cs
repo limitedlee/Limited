@@ -82,12 +82,9 @@ namespace Limited.Gateway
 
         public async Task Invoke(HttpContext context)
         {
-
-            //1.匹配服务
-            await Redirect(context);
+            context = await Redirect(context);
 
             var client = httpClientFactory.CreateClient();
-
             var url = new Uri($"{context.Request.Scheme}://{context.Request.Host.Host}:{context.Request.Host.Port}");
             client.BaseAddress = url;
             if (context.Request.Method.ToLower() == "get")
