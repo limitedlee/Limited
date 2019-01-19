@@ -11,6 +11,7 @@ using System.Linq;
 using System.Net.Http;
 using System.IO;
 using System.Net;
+using System.Text;
 
 namespace Limited.Gateway
 {
@@ -71,18 +72,25 @@ namespace Limited.Gateway
                 }
             });
 
-
-            context.Request.Host = dic.First().Value;
-            context.Request.Path = new PathString(dic.First().Key);
-
+            if (dic.Count > 0)
+            {
+                context.Request.Host = dic.First().Value;
+                context.Request.Path = new PathString(dic.First().Key);
+            }
 
             return context;
         }
 
-
         public async Task Invoke(HttpContext context)
         {
             context = await Redirect(context);
+
+            //var buffer = new byte[(int)context.Request.ContentLength];
+
+            //var json = await context.Request.Body.ReadAsync(buffer, 0, (int)context.Request.ContentLength);
+
+            var bb = await context.Request.ReadFormAsync();
+           // var aa = Encoding.UTF8.GetString(buffer);
 
             var client = httpClientFactory.CreateClient();
             var url = new Uri($"{context.Request.Scheme}://{context.Request.Host.Host}:{context.Request.Host.Port}");
@@ -100,8 +108,6 @@ namespace Limited.Gateway
                     }
                 }
             }
-
-            //  context.RequestServices.
 
             await next(context);
         }

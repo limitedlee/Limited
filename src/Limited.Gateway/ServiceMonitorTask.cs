@@ -21,52 +21,60 @@ namespace Limited.Gateway
             {
                 await new TaskFactory().StartNew(() =>
                 {
-                    var services = ConsulHelper.Client.Agent.Services();
 
-                    var consulServices = new List<AgentService>();
-                    foreach (var s in services.Result.Response)
+                    try
                     {
-                        s.Value.Service = s.Value.Service.ToLower();
-                        consulServices.Add(s.Value);
-                    }
+                        var services = ConsulHelper.Client.Agent.Services();
 
-                    foreach (var agentService in consulServices)
-                    {
-
-                        var serviceName = agentService.Service.ToLower();
-                        if (!ServiceTable.Services.ContainsKey(serviceName))
+                        var consulServices = new List<AgentService>();
+                        foreach (var s in services.Result.Response)
                         {
-                            var bag = new ConcurrentBag<AgentService>();
-                            bag.Add(agentService);
-
-                            ServiceTable.Services.TryAdd(serviceName, bag);
+                            s.Value.Service = s.Value.Service.ToLower();
+                            consulServices.Add(s.Value);
                         }
-                        else
+
+                        foreach (var agentService in consulServices)
                         {
-                            if (!ServiceTable.Services[serviceName].Any(x => x.Address == agentService.Address && x.Port == agentService.Port))
+
+                            var serviceName = agentService.Service.ToLower();
+                            if (!ServiceTable.Services.ContainsKey(serviceName))
                             {
-                                ServiceTable.Services[serviceName].Add(agentService);
+                                var bag = new ConcurrentBag<AgentService>();
+                                bag.Add(agentService);
+
+                                ServiceTable.Services.TryAdd(serviceName, bag);
+                            }
+                            else
+                            {
+                                if (!ServiceTable.Services[serviceName].Any(x => x.Address == agentService.Address && x.Port == agentService.Port))
+                                {
+                                    ServiceTable.Services[serviceName].Add(agentService);
+                                }
                             }
                         }
-                    }
 
 
-                    var cacheServices = ServiceTable.Services.ToArray();
-                    foreach (var kvp in cacheServices)
-                    {
-                        if (!consulServices.Any(x => x.Service == kvp.Key.ToLower()))
+                        var cacheServices = ServiceTable.Services.ToArray();
+                        foreach (var kvp in cacheServices)
                         {
-                            ServiceTable.Services.Remove(kvp.Key.ToLower(), out ConcurrentBag<AgentService> removeData);
-                            break;
-                        }
-
-                        foreach (var service in kvp.Value)
-                        {
-                            if (!consulServices.Any(x => x.Address == service.Address && x.Port == service.Port))
+                            if (!consulServices.Any(x => x.Service == kvp.Key.ToLower()))
                             {
                                 ServiceTable.Services.Remove(kvp.Key.ToLower(), out ConcurrentBag<AgentService> removeData);
+                                break;
+                            }
+
+                            foreach (var service in kvp.Value)
+                            {
+                                if (!consulServices.Any(x => x.Address == service.Address && x.Port == service.Port))
+                                {
+                                    ServiceTable.Services.Remove(kvp.Key.ToLower(), out ConcurrentBag<AgentService> removeData);
+                                }
                             }
                         }
+                    }
+                    catch (Exception exp)
+                    {
+                        logger.LogError(exp.ToString());
                     }
 
                     Thread.Sleep(1 * 1000);
