@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.IO;
 using System.Net;
 using System.Text;
+using Limited.Gateway.Core.ServiceDiscovery;
 
 namespace Limited.Gateway
 {
@@ -54,21 +55,23 @@ namespace Limited.Gateway
                 {
                     state.Stop();
                     //取最大公共子串
-                    var maxSubStr = SearchMaxSubStr(sourceRegex, path)[0];
+                    var maxSubStr = GetMaxSubStr(sourceRegex, path)[0];
                     var maxSubStrIndex = path.Value.IndexOf(maxSubStr);
                     //找到公共子串后面的通配符匹配的内容
                     var matchValue = path.Value.Substring(maxSubStrIndex + maxSubStr.Length);
 
                     var targetPath = Regex.Replace(c.TargetPathRegex, "{[0-9a-zA-Z*#].*}", matchValue);
 
-
-                    Random random = new Random();
-                    var a = random.Next(0, ServiceTable.Services[c.TargetService.ToLower()].Count);
-
-                    var currentService = ServiceTable.Services[c.TargetService.ToLower()].ToArray()[a];
-
-                    var targethost = new HostString(currentService.Address, currentService.Port);
-                    dic.TryAdd(targetPath, targethost);
+                    if (ServiceCache.Services.ContainsKey(c.TargetService.ToLower()))
+                    {
+                        var microServices = ServiceCache.Services[c.TargetService.ToLower()];
+                        var count = microServices.Count;
+                        Random random = new Random();
+                        var a = random.Next(0, count);
+                        var currentService = microServices.First();
+                        var targethost = new HostString(currentService.Address, currentService.Port);
+                        dic.TryAdd(targetPath, targethost);
+                    }
                 }
             });
 
@@ -77,20 +80,29 @@ namespace Limited.Gateway
                 context.Request.Host = dic.First().Value;
                 context.Request.Path = new PathString(dic.First().Key);
             }
+            else
+            {
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+            }
 
             return context;
         }
 
         public async Task Invoke(HttpContext context)
         {
+            var message = new LimitedMessage();
+
+            message.ReadFromHttpContext(context);
+
+
             context = await Redirect(context);
 
             //var buffer = new byte[(int)context.Request.ContentLength];
 
             //var json = await context.Request.Body.ReadAsync(buffer, 0, (int)context.Request.ContentLength);
 
-            var bb = await context.Request.ReadFormAsync();
-           // var aa = Encoding.UTF8.GetString(buffer);
+            //var bb = await context.Request.ReadFormAsync();
+            // var aa = Encoding.UTF8.GetString(buffer);
 
             var client = httpClientFactory.CreateClient();
             var url = new Uri($"{context.Request.Scheme}://{context.Request.Host.Host}:{context.Request.Host.Port}");
@@ -118,7 +130,7 @@ namespace Limited.Gateway
         /// <param name="s1"></param>
         /// <param name="s2"></param>
         /// <returns></returns>
-        private List<string> SearchMaxSubStr(string s1, string s2)
+        private List<string> GetMaxSubStr(string s1, string s2)
         {
             List<string> maxSubStr = new List<string>();
             if (s1 == s2)

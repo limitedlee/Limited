@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Limited.Gateway.Core.ServiceDiscovery;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.IO;
@@ -21,7 +22,7 @@ namespace Limited.Gateway
 
             ConsulUrl = configuration.GetSection("GatewayConfig:ConsulUrl").Value;
             services.AddSingleton<RouteTable>();
-            services.AddTransient<Microsoft.Extensions.Hosting.IHostedService, ServiceMonitorTask>();
+            services.AddTransient<Microsoft.Extensions.Hosting.IHostedService, ServiceTask>();
             services.AddHttpClient();
         }
 

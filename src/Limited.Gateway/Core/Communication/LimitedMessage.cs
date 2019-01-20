@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Limited.Gateway
 {
@@ -26,28 +28,18 @@ namespace Limited.Gateway
 
         public string QueryString { get; set; }
 
-        public int ContentLength { get; set; } = 0;
+        public long ContentLength { get; set; } = 0;
 
         public string Body { get; set; }
 
-        public Dictionary<string, string> Cookies { get; set; }
+        public ConcurrentDictionary<string, string> Cookies { get; set; } = new ConcurrentDictionary<string, string>();
 
-        public Dictionary<string, string> Headers { get; set; }
+        public ConcurrentDictionary<string, string> Headers { get; set; } = new ConcurrentDictionary<string, string>();
 
-        public Dictionary<string, string> Query { get; set; }
+        public ConcurrentDictionary<string, string> Query { get; set; } = new ConcurrentDictionary<string, string>();
 
-        public Dictionary<string, string> Forms { get; set; }
+        public ConcurrentDictionary<string, string> Forms { get; set; } = new ConcurrentDictionary<string, string>();
 
-        public RouteOption Option { get; set; }
-
-        public void ReadFromHttpContext(HttpContext context)
-        {
-
-        }
-
-        public void ReadFromResponseMessage(HttpResponseMessage message)
-        {
-
-        }
+        public RouteOption Option { get; set; } = new RouteOption();
     }
 }

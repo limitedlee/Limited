@@ -10,7 +10,7 @@ using System.Web;
 
 namespace Limited.Gateway.Extensions
 {
-  public static  class StringExtensions
+    public static class StringExtensions
     {
         /// <summary>
         /// 字符串获取MD5
@@ -30,6 +30,7 @@ namespace Limited.Gateway.Extensions
             }
             return sb.ToString();
         }
+
         public static string Base64Encode(this string plainText)
         {
             var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
@@ -66,10 +67,12 @@ namespace Limited.Gateway.Extensions
             }
             return false;
         }
+
         public static string[] SafeSplit(this string str, params string[] separator)
         {
             return str.SafeToString().Split(separator, StringSplitOptions.RemoveEmptyEntries);
         }
+
         public static List<string> SafeSplitAddDefault(this string str, params string[] separator)
         {
             var list = new List<string>(str.SafeSplit(separator))
@@ -78,6 +81,7 @@ namespace Limited.Gateway.Extensions
             };
             return list;
         }
+
         public static string SafeSubstring(this object obj, int length, string other = "")
         {
             if (obj == null)
@@ -145,7 +149,6 @@ namespace Limited.Gateway.Extensions
                 return string.Empty;
             }
         }
-
 
         /// <summary>
         /// Deserializes the specified isthrowexception.
