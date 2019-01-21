@@ -13,6 +13,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using Limited.Gateway.Core.ServiceDiscovery;
+using Limited.Gateway.Core.Communication;
 
 namespace Limited.Gateway
 {
@@ -22,19 +23,20 @@ namespace Limited.Gateway
         //private readonly LimitedRequestDelegate next;
         private ILogger<GateWayMiddleware> logger;
         private RouteTable route;
-        private readonly IHttpClientFactory httpClientFactory;
+        private IMessageSender messageSender;
+
 
         public GateWayMiddleware(
             RequestDelegate _next,
             //LimitedRequestDelegate _next, 
             ILogger<GateWayMiddleware> _logger,
             RouteTable _route,
-            IHttpClientFactory _httpClientFactory)
+            IMessageSender _messageSender)
         {
             logger = _logger;
             next = _next;
             route = _route;
-            httpClientFactory = _httpClientFactory;
+            messageSender = _messageSender;
             Console.WriteLine("RouteMiddleware init");
         }
 
@@ -88,14 +90,60 @@ namespace Limited.Gateway
             return context;
         }
 
+        private async Task<LimitedMessage> Redirect(LimitedMessage message)
+        {
+            var dic = new ConcurrentDictionary<string, HostString>();
+
+            Parallel.ForEach(route.Cache, async (RouteOption c, ParallelLoopState state) =>
+            {
+                var sourceRegex = Regex.Replace(c.SourcePathRegex, "{[0-9a-zA-Z*#].*}", "[0-9a-zA-Z/].*$");
+                sourceRegex = $"^{sourceRegex}";
+
+                if (Regex.IsMatch(message.Context.Request.Path, sourceRegex))
+                {
+                    state.Stop();
+                    //取最大公共子串
+                    var maxSubStr = GetMaxSubStr(sourceRegex, message.Context.Request.Path)[0];
+                    var maxSubStrIndex = message.Context.Request.Path.Value.IndexOf(maxSubStr);
+                    //找到公共子串后面的通配符匹配的内容
+                    var matchValue = message.Context.Request.Path.Value.Substring(maxSubStrIndex + maxSubStr.Length);
+
+                    var targetPath = Regex.Replace(c.TargetPathRegex, "{[0-9a-zA-Z*#].*}", matchValue);
+
+                    if (ServiceCache.Services.ContainsKey(c.TargetService.ToLower()))
+                    {
+                        var microServices = ServiceCache.Services[c.TargetService.ToLower()];
+                        var count = microServices.Count;
+                        Random random = new Random();
+                        var a = random.Next(0, count);
+                        var currentService = microServices.First();
+                        var targethost = new HostString(currentService.Address, currentService.Port);
+                        dic.TryAdd(targetPath, targethost);
+                    }
+                }
+            });
+
+            if (dic.Count > 0)
+            {
+                var urlString = $"{message.Context.Request.Scheme}://{dic.First().Value.Value}{dic.First().Key}";
+                message.RequestMessage.RequestUri = new Uri(urlString);
+            }
+            else
+            {
+                //message.StatusCode = (HttpStatusCode)StatusCodes.Status404NotFound;
+            }
+
+            return message;
+        }
+
         public async Task Invoke(HttpContext context)
         {
-            var message = new LimitedMessage();
+            var message = new LimitedMessage(context);
+            await message.Map(context);
 
-            message.ReadFromHttpContext(context);
+            message = await Redirect(message);
 
-
-            context = await Redirect(context);
+            message = await messageSender.Sender(message);
 
             //var buffer = new byte[(int)context.Request.ContentLength];
 
@@ -104,24 +152,18 @@ namespace Limited.Gateway
             //var bb = await context.Request.ReadFormAsync();
             // var aa = Encoding.UTF8.GetString(buffer);
 
-            var client = httpClientFactory.CreateClient();
-            var url = new Uri($"{context.Request.Scheme}://{context.Request.Host.Host}:{context.Request.Host.Port}");
-            client.BaseAddress = url;
-            if (context.Request.Method.ToLower() == "get")
+            var content = await message.ResponseMessage.Content.ReadAsByteArrayAsync();
+            using (Stream stream = new MemoryStream(content))
             {
-                var response = await client.GetAsync(context.Request.Path);
-                var content = await response.Content.ReadAsByteArrayAsync();
-
-                using (Stream stream = new MemoryStream(content))
+                if (message.ResponseMessage.StatusCode != HttpStatusCode.NotModified && context.Response.ContentLength != 0)
                 {
-                    if (response.StatusCode != HttpStatusCode.NotModified && context.Response.ContentLength != 0)
-                    {
-                        await stream.CopyToAsync(context.Response.Body);
-                    }
+                    await stream.CopyToAsync(context.Response.Body);
                 }
             }
 
-            await next(context);
+
+
+            //await next(context);
         }
 
         /// <summary>
