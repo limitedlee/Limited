@@ -1,4 +1,7 @@
 ﻿using Limited.Gateway.Core.Communication;
+using Limited.Gateway.Core.LoadBalance;
+using Limited.Gateway.Core.Route;
+using Limited.Gateway.Core.Route.LoadBalance;
 using Limited.Gateway.Core.ServiceDiscovery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +28,8 @@ namespace Limited.Gateway
             services.AddSingleton<RouteTable>();
             services.AddTransient<Microsoft.Extensions.Hosting.IHostedService, ServiceTask>();
             services.AddSingleton<IMessageSender, DefaultHttpMessageSender>();
+            services.AddSingleton<ILoadBalance, RandomLoadBalance>();
+            services.AddSingleton<IRoute, DefaultRouteRedirect>();
             services.AddHttpClient();
         }
 

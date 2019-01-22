@@ -14,226 +14,42 @@ using System.Net;
 using System.Text;
 using Limited.Gateway.Core.ServiceDiscovery;
 using Limited.Gateway.Core.Communication;
+using Limited.Gateway.Core.Route;
 
 namespace Limited.Gateway
 {
     public class GateWayMiddleware
     {
         private readonly RequestDelegate next;
-        //private readonly LimitedRequestDelegate next;
         private ILogger<GateWayMiddleware> logger;
-        private RouteTable route;
         private IMessageSender messageSender;
-
+        private IRoute route;
 
         public GateWayMiddleware(
             RequestDelegate _next,
-            //LimitedRequestDelegate _next, 
             ILogger<GateWayMiddleware> _logger,
-            RouteTable _route,
-            IMessageSender _messageSender)
+            IMessageSender _messageSender,
+            IRoute _route)
         {
             logger = _logger;
             next = _next;
-            route = _route;
             messageSender = _messageSender;
-            Console.WriteLine("RouteMiddleware init");
-        }
-
-
-        private async Task<HttpContext> Redirect(HttpContext context)
-        {
-            var path = context.Request.Path;
-            var verb = context.Request.Method;
-
-            var dic = new ConcurrentDictionary<string, HostString>();
-
-            Parallel.ForEach(route.Cache, async (RouteOption c, ParallelLoopState state) =>
-            {
-                var sourceRegex = Regex.Replace(c.SourcePathRegex, "{[0-9a-zA-Z*#].*}", "[0-9a-zA-Z/].*$");
-                sourceRegex = $"^{sourceRegex}";
-
-                if (Regex.IsMatch(path, sourceRegex))
-                {
-                    state.Stop();
-                    //取最大公共子串
-                    var maxSubStr = GetMaxSubStr(sourceRegex, path)[0];
-                    var maxSubStrIndex = path.Value.IndexOf(maxSubStr);
-                    //找到公共子串后面的通配符匹配的内容
-                    var matchValue = path.Value.Substring(maxSubStrIndex + maxSubStr.Length);
-
-                    var targetPath = Regex.Replace(c.TargetPathRegex, "{[0-9a-zA-Z*#].*}", matchValue);
-
-                    if (ServiceCache.Services.ContainsKey(c.TargetService.ToLower()))
-                    {
-                        var microServices = ServiceCache.Services[c.TargetService.ToLower()];
-                        var count = microServices.Count;
-                        Random random = new Random();
-                        var a = random.Next(0, count);
-                        var currentService = microServices.First();
-                        var targethost = new HostString(currentService.Address, currentService.Port);
-                        dic.TryAdd(targetPath, targethost);
-                    }
-                }
-            });
-
-            if (dic.Count > 0)
-            {
-                context.Request.Host = dic.First().Value;
-                context.Request.Path = new PathString(dic.First().Key);
-            }
-            else
-            {
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
-            }
-
-            return context;
-        }
-
-        private async Task<LimitedMessage> Redirect(LimitedMessage message)
-        {
-            var dic = new ConcurrentDictionary<string, HostString>();
-
-            Parallel.ForEach(route.Cache, async (RouteOption c, ParallelLoopState state) =>
-            {
-                var sourceRegex = Regex.Replace(c.SourcePathRegex, "{[0-9a-zA-Z*#].*}", "[0-9a-zA-Z/].*$");
-                sourceRegex = $"^{sourceRegex}";
-
-                if (Regex.IsMatch(message.Context.Request.Path, sourceRegex))
-                {
-                    state.Stop();
-                    //取最大公共子串
-                    var maxSubStr = GetMaxSubStr(sourceRegex, message.Context.Request.Path)[0];
-                    var maxSubStrIndex = message.Context.Request.Path.Value.IndexOf(maxSubStr);
-                    //找到公共子串后面的通配符匹配的内容
-                    var matchValue = message.Context.Request.Path.Value.Substring(maxSubStrIndex + maxSubStr.Length);
-
-                    var targetPath = Regex.Replace(c.TargetPathRegex, "{[0-9a-zA-Z*#].*}", matchValue);
-
-                    if (ServiceCache.Services.ContainsKey(c.TargetService.ToLower()))
-                    {
-                        var microServices = ServiceCache.Services[c.TargetService.ToLower()];
-                        var count = microServices.Count;
-                        Random random = new Random();
-                        var a = random.Next(0, count);
-                        var currentService = microServices.First();
-                        var targethost = new HostString(currentService.Address, currentService.Port);
-                        dic.TryAdd(targetPath, targethost);
-                    }
-                }
-            });
-
-            if (dic.Count > 0)
-            {
-                var urlString = $"{message.Context.Request.Scheme}://{dic.First().Value.Value}{dic.First().Key}";
-                message.RequestMessage.RequestUri = new Uri(urlString);
-            }
-            else
-            {
-                //message.StatusCode = (HttpStatusCode)StatusCodes.Status404NotFound;
-            }
-
-            return message;
+            route = _route;
         }
 
         public async Task Invoke(HttpContext context)
         {
             var message = new LimitedMessage(context);
-            await message.Map(context);
+            await message.MapRequest(context);
 
-            message = await Redirect(message);
+            message = await route.Redirect(message);
 
             message = await messageSender.Sender(message);
 
-            //var buffer = new byte[(int)context.Request.ContentLength];
-
-            //var json = await context.Request.Body.ReadAsync(buffer, 0, (int)context.Request.ContentLength);
-
-            //var bb = await context.Request.ReadFormAsync();
-            // var aa = Encoding.UTF8.GetString(buffer);
-
-            var content = await message.ResponseMessage.Content.ReadAsByteArrayAsync();
-            using (Stream stream = new MemoryStream(content))
-            {
-                if (message.ResponseMessage.StatusCode != HttpStatusCode.NotModified && context.Response.ContentLength != 0)
-                {
-                    await stream.CopyToAsync(context.Response.Body);
-                }
-            }
-
-
+            message.MapResponse(ref context);
 
             //await next(context);
         }
 
-        /// <summary>
-        /// 求最长公共子串
-        /// </summary>
-        /// <param name="s1"></param>
-        /// <param name="s2"></param>
-        /// <returns></returns>
-        private List<string> GetMaxSubStr(string s1, string s2)
-        {
-            List<string> maxSubStr = new List<string>();
-            if (s1 == s2)
-            {
-                maxSubStr.Add(s1);
-                return maxSubStr;
-            }
-
-            int len1 = s1.Length;
-            int len2 = s2.Length;
-            int maxLen = 0;
-            List<string> subStr = new List<string>();
-            for (int i = 0; i < len2; i++)
-            {
-                for (int k = 0; k < len1; k++)
-                {
-                    if (s2[i] == s1[k])
-                    {
-                        int n = i;
-                        int m = k;
-                        int subLen = 0;
-                        while (s2[n] == s1[m])
-                        {
-                            n++;
-                            m++;
-                            subLen++;
-                            if (m == len1 || n == len2)
-                            {
-                                break;
-                            }
-                        }
-
-                        if (maxLen < subLen)
-                        {
-                            maxLen = subLen;
-                            subStr.Clear();
-                            subStr.Add((n - 1) + "," + subLen);
-
-                        }
-                        else if (maxLen == subLen)
-                        {
-                            if (!subStr.Contains((n - 1) + "," + subLen))
-                                subStr.Add((n - 1) + "," + subLen);
-                        }
-                    }
-                }
-            }
-            for (int j = 0; j < subStr.Count; j++)
-            {
-                string[] subStrIndex = subStr[j].Split(',');
-                int len = int.Parse(subStrIndex[1]);
-                int index = int.Parse(subStrIndex[0]);
-                string sub = "";
-                for (int k = index - len + 1; k <= index; k++)
-                {
-                    sub = sub + s2.Substring(k, 1);
-                }
-                maxSubStr.Add(sub);
-            }
-
-            return maxSubStr;
-        }
     }
 }

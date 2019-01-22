@@ -24,7 +24,7 @@ namespace Limited.Gateway.Core.Communication
 
             if (message.Context.Request.QueryString.HasValue)
             {
-                var url = message.RequestMessage.RequestUri.AbsolutePath + message.Context.Request.QueryString.Value;
+                var url = message.RequestMessage.RequestUri.AbsoluteUri + message.Context.Request.QueryString.Value;
                 message.RequestMessage.RequestUri = new Uri(url);
             }
             

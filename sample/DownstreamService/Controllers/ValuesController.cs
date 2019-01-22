@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Consul;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 namespace DownstreamService.Controllers
 {
@@ -25,16 +17,36 @@ namespace DownstreamService.Controllers
             return Ok(id);
         }
 
-        // POST api/values
-        [HttpPost]
-        public void Post([FromBody] string value)
+        [Route("list")]
+        [HttpGet]
+        public dynamic List()
         {
-            Console.WriteLine($"{DateTime.Now.ToString()}----{value}");
+            List<string> items = new List<string>();
+            items.Add("aaaaa");
+            items.Add("bbbbb");
+            items.Add("vvvvv");
+            items.Add("cccccc");
+            items.Add("dddddd");
+
+            Response.Headers.Add("X-Pagination-PageCount", "5");
+            return items;
         }
 
-        public async void Init()
+        // POST api/values
+        [HttpPost]
+        [Route("login")]
+        public ActionResult<string> Post([FromBody] p str)
         {
-            //await route.Push(items);
+            Console.WriteLine($"{DateTime.Now.ToString()}----{str.ToString()}");
+
+            return "ok";
         }
+    }
+
+    public class p
+    {
+        public string mobile { get; set; }
+
+        public string vc { get; set; }
     }
 }

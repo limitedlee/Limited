@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -17,31 +19,6 @@ namespace Limited.Gateway
 
         public HttpResponseMessage ResponseMessage { get; set; } = new HttpResponseMessage();
 
-        //public bool IsHttps { get; set; }
-
-        //public string Scheme { get; set; }
-
-        //public string Method { get; set; }
-
-        //public string ContentType { get; set; }
-
-
-        //public string QueryString { get; set; }
-
-        //public long ContentLength { get; set; } = 0;
-
-        //public string Body { get; set; }
-
-        //public HttpStatusCode StatusCode { get; set; }
-
-        //public ConcurrentDictionary<string, string> Cookies { get; set; } = new ConcurrentDictionary<string, string>();
-
-        //public ConcurrentDictionary<string, string> Headers { get; set; } = new ConcurrentDictionary<string, string>();
-
-        //public ConcurrentDictionary<string, string> Query { get; set; } = new ConcurrentDictionary<string, string>();
-
-        //public ConcurrentDictionary<string, string> Forms { get; set; } = new ConcurrentDictionary<string, string>();
-
         public RouteOption Option { get; set; } = new RouteOption();
 
         public LimitedMessage(HttpContext _Context)
@@ -49,14 +26,14 @@ namespace Limited.Gateway
             Context = _Context;
         }
 
-        public async Task Map(HttpContext context)
+        public async Task MapRequest(HttpContext context)
         {
             RequestMessage.Method = new HttpMethod(context.Request.Method);
 
-            if (context.Request.Body!=null)
+            if (context.Request.Body != null && context.Request.ContentLength != null)
             {
                 var bodyBuffer = new byte[(long)context.Request.ContentLength];
-                context.Request.Body.ReadAsync(bodyBuffer, 0, (int)context.Request.ContentLength);
+                await context.Request.Body.ReadAsync(bodyBuffer, 0, (int)context.Request.ContentLength);
                 RequestMessage.Content = new ByteArrayContent(bodyBuffer);
 
                 RequestMessage.Content.Headers.TryAddWithoutValidation("Content-Type", new[] { context.Request.ContentType });
@@ -93,6 +70,58 @@ namespace Limited.Gateway
                     RequestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
                 }
             }
+        }
+
+        public void MapResponse(ref HttpContext context)
+        {
+            foreach (var httpResponseHeader in ResponseMessage.Headers)
+            {
+                if (!context.Response.Headers.ContainsKey(httpResponseHeader.Key))
+                {
+                    context.Response.Headers.Add(httpResponseHeader.Key, new StringValues(httpResponseHeader.Value.ToString()));
+                }
+            }
+
+            foreach (var httpResponseHeader in ResponseMessage.Content.Headers)
+            {
+                if (!context.Response.Headers.ContainsKey(httpResponseHeader.Key))
+                {
+                    context.Response.Headers.Add(httpResponseHeader.Key, new StringValues(httpResponseHeader.Value.ToString()));
+                }
+            }
+
+            var content = ResponseMessage.Content.ReadAsByteArrayAsync().Result;
+            if (!context.Response.Headers.ContainsKey("Content-Length"))
+            {
+                context.Response.Headers.Add("Content-Length", new StringValues(content.Length.ToString()));
+            }
+
+            context.Response.OnStarting(state =>
+            {
+                var httpContext = (HttpContext)state;
+
+                httpContext.Response.StatusCode = (int)ResponseMessage.StatusCode;
+
+                return Task.CompletedTask;
+            }, context);
+
+            using (Stream stream = new MemoryStream(content))
+            {
+                if (ResponseMessage.StatusCode != HttpStatusCode.NotModified && context.Response.ContentLength != 0)
+                {
+                     stream.CopyToAsync(context.Response.Body);
+                }
+            }
+
+            //context.Response.StatusCode = (int)ResponseMessage.StatusCode;
+            //var content = ResponseMessage.Content.ReadAsByteArrayAsync().Result;
+            //using (Stream stream = new MemoryStream(content))
+            //{
+            //    if (ResponseMessage.StatusCode != HttpStatusCode.NotModified && context.Response.ContentLength != 0)
+            //    {
+            //        stream.CopyToAsync(context.Response.Body);
+            //    }
+            //}
         }
     }
 }
