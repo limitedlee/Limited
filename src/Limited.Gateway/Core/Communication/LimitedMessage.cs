@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Limited.Gateway
 {
@@ -86,7 +87,7 @@ namespace Limited.Gateway
             {
                 if (!context.Response.Headers.ContainsKey(httpResponseHeader.Key))
                 {
-                    context.Response.Headers.Add(httpResponseHeader.Key, new StringValues(httpResponseHeader.Value.ToString()));
+                    context.Response.Headers.Add(httpResponseHeader.Key, new StringValues(httpResponseHeader.Value.ToList()[0]));
                 }
             }
 
@@ -112,16 +113,6 @@ namespace Limited.Gateway
                      stream.CopyToAsync(context.Response.Body);
                 }
             }
-
-            //context.Response.StatusCode = (int)ResponseMessage.StatusCode;
-            //var content = ResponseMessage.Content.ReadAsByteArrayAsync().Result;
-            //using (Stream stream = new MemoryStream(content))
-            //{
-            //    if (ResponseMessage.StatusCode != HttpStatusCode.NotModified && context.Response.ContentLength != 0)
-            //    {
-            //        stream.CopyToAsync(context.Response.Body);
-            //    }
-            //}
         }
     }
 }
