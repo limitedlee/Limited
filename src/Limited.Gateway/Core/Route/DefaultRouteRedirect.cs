@@ -24,6 +24,29 @@ namespace Limited.Gateway.Core.Route
         {
             var route = new RouteTable();
 
+            //如果未配置服务,即通过服务发现自动转发
+            if (route.Cache == null || route.Cache.Count == 0)
+            {
+                //以Request的Path的第一个节点作为服务名  
+                //如 /base/member/add  服务名为base
+                var serviceName = string.Empty;
+                var path = message.Context.Request.Path.Value.TrimStart('/');
+                var indexFirstSeparator = path.IndexOf('/');
+                serviceName = path.Substring(0, indexFirstSeparator).ToLower();
+                if (serviceName.Length == 0)
+                {
+                    message.ResponseMessage.StatusCode = System.Net.HttpStatusCode.NotFound;
+                    return message;
+                }
+                message.Option = new RouteOption
+                {
+                    HttpMethods = new string[2] { "Get", "Post" },
+                    SourcePathRegex = "/" + serviceName + "/{something}",
+                    TargetPathRegex = "/" + serviceName + "/{something}",
+                    TargetService = serviceName
+                };
+            }
+
             Parallel.ForEach(route.Cache, async (RouteOption c, ParallelLoopState state) =>
             {
                 var sourceRegex = Regex.Replace(c.SourcePathRegex, "{[0-9a-zA-Z*#].*}", "[0-9a-zA-Z/].*$");

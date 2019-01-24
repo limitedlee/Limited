@@ -32,8 +32,6 @@ namespace Limited.Gateway.Core.Communication
 
             message.ResponseMessage = await client.SendAsync(message.RequestMessage);
 
-
-
             return message;
 
         }

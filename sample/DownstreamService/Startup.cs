@@ -37,11 +37,12 @@ namespace DownstreamService
 
             app.UseMicroService(lifetime, (service) =>
             {
-                service.Name = "DownstreamService";
+                service.Name = "Api";
                 service.DisplayName = "订单服务";
                 service.Version = "1.0";
                 service.XmlName = "DownstreamService.xml";
                 service.LocalAddress = Configuration.GetSection("ServiceAddress").Value;
+                service.DCAddress = "http://192.168.3.21:8500";
             });
 
             //app.UseHttpsRedirection();
