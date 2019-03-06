@@ -10,14 +10,11 @@ namespace Limited.MicroService
 {
     public static class MicroServiceExtension
     {
-        public static void UseMicroService(this IApplicationBuilder app, IApplicationLifetime lifetime, Action<ServiceConfig> action)
+        public static void UseMicroService(this IApplicationBuilder app, IApplicationLifetime lifetime, ServiceConfig serviceInfo)
         {
             //读取配置文件
             var configBuilder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
             var config = configBuilder.Build();
-
-            ServiceConfig serviceInfo = new ServiceConfig();
-            action.Invoke(serviceInfo);
 
             var serviceId = $" {serviceInfo.Name}-{ serviceInfo.LocalAddress.Replace(':', '-')}";
             var ip = serviceInfo.LocalAddress.Split(':')[0];
@@ -57,6 +54,13 @@ namespace Limited.MicroService
                     await context.Response.WriteAsync("ok");
                 });
             });
+        }
+
+        public static void UseMicroService(this IApplicationBuilder app, IApplicationLifetime lifetime, Action<ServiceConfig> action)
+        {
+            var serviceInfo = new ServiceConfig();
+            action.Invoke(serviceInfo);
+            UseMicroService(app, lifetime, serviceInfo);
         }
     }
 }
