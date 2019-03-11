@@ -23,7 +23,10 @@ namespace Limited.Gateway.Core.ServiceDiscovery
                 {
                     try
                     {
-                        var services = ConsulHelper.Client.Agent.Services().Result.Response;
+
+                        var result = ConsulHelper.Client.Agent.Services().Result;
+                        
+                        var services = result.Response;
 
 
 

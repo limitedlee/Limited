@@ -18,7 +18,7 @@ namespace Limited.MicroService
             //Swagger配置
             services.AddSwaggerGen(option =>
             {
-                option.SwaggerDoc(serviceConfig.Name, new Info
+                option.SwaggerDoc(serviceConfig.Name.ToLower(), new Info
                 {
                     Title = serviceConfig.DisplayName,
                     Version = serviceConfig.Version
@@ -28,7 +28,7 @@ namespace Limited.MicroService
                 option.IncludeXmlComments(xmlPath);
             });
 
-            services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new Info {Title = "My API", Version = "v1"}); });
+           // services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new Info {Title = "My API", Version = "v1"}); });
 
             //跨域配置
             services.AddCors(opt =>
@@ -83,8 +83,10 @@ namespace Limited.MicroService
 
             if (!env.IsProduction())
             {
-                app.UseSwagger();
-                app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "MsSystem API V1"); });
+//                app.UseSwagger();
+//                app.UseSwaggerUI(c => { c.SwaggerEndpoint($"/swagger/swagger.json", serviceInfo.Name); });
+                app.UseSwagger(opt => { opt.RouteTemplate = "{documentName}/swagger.json"; });
+                app.UseSwaggerUI(opt => { opt.SwaggerEndpoint($"/{serviceInfo.Name.ToLower()}/swagger.json", serviceInfo.DisplayName); });
             }
 
             app.UseAuthentication();
