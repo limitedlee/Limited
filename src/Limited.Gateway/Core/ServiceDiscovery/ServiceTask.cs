@@ -23,63 +23,7 @@ namespace Limited.Gateway.Core.ServiceDiscovery
                 {
                     try
                     {
-
-                        var result = ConsulHelper.Client.Agent.Services().Result;
-                        
-                        var services = result.Response;
-
-
-
-                        foreach (var agentService in services)
-                        {
-                            var serviceName = agentService.Value.Service.ToLower();
-                            var microService = new MicroService
-                            {
-                                Id = agentService.Key,
-                                Name = agentService.Value.Service,
-                                Address = agentService.Value.Address,
-                                Port = agentService.Value.Port
-                            };
-
-                            if (!ServiceCache.Services.ContainsKey(serviceName))
-                            {
-                                var bag = new ConcurrentBag<MicroService>();
-                                bag.Add(microService);
-                                ServiceCache.Services.TryAdd(serviceName, bag);
-                            }
-                            else
-                            {
-                                if (!ServiceCache.Services[serviceName].Any(x => x.Id == agentService.Key))
-                                {
-                                    ServiceCache.Services[serviceName].Add(microService);
-                                }
-                            }
-                        }
-
-                        var consulServices = new List<AgentService>();
-                        foreach (var s in services)
-                        {
-                            s.Value.Service = s.Value.Service.ToLower();
-                            consulServices.Add(s.Value);
-                        }
-
-                        var cacheServices = ServiceCache.Services.ToList();
-                        foreach (var kvp in cacheServices)
-                        {
-                            if (!consulServices.Any(x => x.Service == kvp.Key.ToLower()))
-                            {
-                                ServiceCache.Services.Remove(kvp.Key.ToLower(), out ConcurrentBag<MicroService> removeData);
-                                break;
-                            }
-
-                            foreach (var service in kvp.Value)
-                            {
-                                if (!consulServices.Any(x => x.Address == service.Address && x.Port == service.Port))
-                                {
-                                    ServiceCache.Services.Remove(kvp.Key.ToLower(), out ConcurrentBag<MicroService> removeData);
-                                }
-                            }
-                        }
+                        RoundRobinService();
                     }
                     catch (Exception exp)
                     {
@@ -88,6 +32,64 @@ namespace Limited.Gateway.Core.ServiceDiscovery
 
                     Thread.Sleep(1 * 1000);
                 });
+            }
+        }
+
+        public static void RoundRobinService()
+        {
+            var result = ConsulHelper.Client.Agent.Services().Result;
+            var services = result.Response;
+
+            foreach (var agentService in services)
+            {
+                var serviceName = agentService.Value.Service.ToLower();
+                var microService = new MicroService
+                {
+                    Id = agentService.Key,
+                    Name = agentService.Value.Service,
+                    Address = agentService.Value.Address,
+                    Port = agentService.Value.Port,
+                    DisplayName = agentService.Value.Tags != null ? agentService.Value.Tags[0] : ""
+                };
+
+                if (!ServiceCache.Services.ContainsKey(serviceName))
+                {
+                    var bag = new ConcurrentBag<MicroService>();
+                    bag.Add(microService);
+                    ServiceCache.Services.TryAdd(serviceName, bag);
+                }
+                else
+                {
+                    if (!ServiceCache.Services[serviceName].Any(x => x.Id == agentService.Key))
+                    {
+                        ServiceCache.Services[serviceName].Add(microService);
+                    }
+                }
+            }
+
+            var consulServices = new List<AgentService>();
+            foreach (var s in services)
+            {
+                s.Value.Service = s.Value.Service.ToLower();
+                consulServices.Add(s.Value);
+            }
+
+            var cacheServices = ServiceCache.Services.ToList();
+            foreach (var kvp in cacheServices)
+            {
+                if (!consulServices.Any(x => x.Service == kvp.Key.ToLower()))
+                {
+                    ServiceCache.Services.Remove(kvp.Key.ToLower(), out ConcurrentBag<MicroService> removeData);
+                    break;
+                }
+
+                foreach (var service in kvp.Value)
+                {
+                    if (!consulServices.Any(x => x.Address == service.Address && x.Port == service.Port))
+                    {
+                        ServiceCache.Services.Remove(kvp.Key.ToLower(), out ConcurrentBag<MicroService> removeData);
+                    }
+                }
             }
         }
     }

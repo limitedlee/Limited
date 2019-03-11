@@ -28,7 +28,7 @@ namespace Limited.MicroService
                 option.IncludeXmlComments(xmlPath);
             });
 
-           // services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new Info {Title = "My API", Version = "v1"}); });
+            // services.AddSwaggerGen(c => { c.SwaggerDoc("v1", new Info {Title = "My API", Version = "v1"}); });
 
             //跨域配置
             services.AddCors(opt =>
@@ -37,7 +37,6 @@ namespace Limited.MicroService
                     builder => { builder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin().AllowCredentials(); });
             });
         }
-
 
         public static void UseMicroService(this IApplicationBuilder app, IHostingEnvironment env,
             IApplicationLifetime lifetime, ServiceConfig serviceInfo)
@@ -65,8 +64,9 @@ namespace Limited.MicroService
                         HTTP = $"http://{serviceInfo.LocalAddress}/health", //健康检查访问的地址
                         Interval = TimeSpan.FromSeconds(2), //健康检查的间隔时间
                         Timeout = TimeSpan.FromSeconds(1), //多久代表超时
-                    },
+                    }
                 };
+                asr.Tags = new string[1] { serviceInfo.DisplayName };
                 consulClient.Agent.ServiceRegister(asr).Wait();
             }
 
@@ -83,8 +83,8 @@ namespace Limited.MicroService
 
             if (!env.IsProduction())
             {
-//                app.UseSwagger();
-//                app.UseSwaggerUI(c => { c.SwaggerEndpoint($"/swagger/swagger.json", serviceInfo.Name); });
+                //app.UseSwagger();
+                //app.UseSwaggerUI(c => { c.SwaggerEndpoint($"/api/swagger.json", serviceInfo.Name); });
                 app.UseSwagger(opt => { opt.RouteTemplate = "{documentName}/swagger.json"; });
                 app.UseSwaggerUI(opt => { opt.SwaggerEndpoint($"/{serviceInfo.Name.ToLower()}/swagger.json", serviceInfo.DisplayName); });
             }

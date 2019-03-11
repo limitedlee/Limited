@@ -29,11 +29,8 @@ namespace Limited.Gateway.Core.Communication
             }
             
             HttpResponseMessage responseMessage = null;
-
             message.ResponseMessage = await client.SendAsync(message.RequestMessage);
-
             return message;
-
         }
     }
 }

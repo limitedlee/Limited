@@ -17,7 +17,7 @@ namespace DownstreamService
             Configuration = configuration;
             
             service=new ServiceConfig();
-            service.Name = "Api";
+            service.Name = "order";
             service.DisplayName = "订单服务";
             service.Version = "1.0";
             service.XmlName = "DownstreamService.xml";

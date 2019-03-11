@@ -6,7 +6,9 @@ using Limited.Gateway.Core.ServiceDiscovery;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Swashbuckle.AspNetCore.Swagger;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Limited.Gateway
 {
@@ -23,6 +25,7 @@ namespace Limited.Gateway
             {
                 throw new ConfigException("undefine 'GatewayConfig' node in appsettings.json file!");
             }
+            services.AddSwaggerGen(opt => { opt.SwaggerDoc("Gate", new Info { Title = "网关服务", Version = "v1" }); });
 
             ConsulUrl = configuration.GetSection("GatewayConfig:ConsulUrl").Value;
             services.AddSingleton<RouteTable>();
@@ -37,6 +40,17 @@ namespace Limited.Gateway
         {
             app.UseMiddleware<GateWayMiddleware>();
             app.UseConsul(ConsulUrl);
+
+            ServiceTask.RoundRobinService();
+            app.UseSwagger();
+            app.UseSwaggerUI(opts =>
+            {
+                foreach (var s in ServiceCache.Services)
+                {
+                    var v = s.Value.ToArray()[0];
+                    opts.SwaggerEndpoint($"/{s.Key}/swagger.json", v.DisplayName);
+                }
+            });
         }
     }
 }

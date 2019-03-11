@@ -20,6 +20,11 @@ namespace Limited.Gateway.Core
         public string Name { get; set; }
 
         /// <summary>
+        /// 展示名称
+        /// </summary>
+        public string DisplayName { get; set; }
+
+        /// <summary>
         /// 服务地址
         /// </summary>
         public string Address { get; set; }
