@@ -4,11 +4,18 @@ using System.Collections.Generic;
 
 namespace DownstreamService.Controllers
 {
+    /// <summary>
+    /// values
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ValuesController : ControllerBase
     {
-        // GET api/values/5
+        /// <summary>
+        /// GET api/values/5
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("{id}")]
         public ActionResult<string> Get(int id)
         {
@@ -17,6 +24,10 @@ namespace DownstreamService.Controllers
             return Ok(id);
         }
 
+        /// <summary>
+        /// 获取列表
+        /// </summary>
+        /// <returns></returns>
         [Route("list")]
         [HttpGet]
         public dynamic List()
@@ -32,7 +43,11 @@ namespace DownstreamService.Controllers
             return items;
         }
 
-        // POST api/values
+        /// <summary>
+        /// POST api/values
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
         [HttpPost]
         [Route("login")]
         public ActionResult<string> Post([FromBody] p str)
