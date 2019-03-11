@@ -5,11 +5,40 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
+using Microsoft.Extensions.DependencyInjection;
+using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Limited.MicroService
 {
     public static class MicroServiceExtension
     {
+
+        public static void AddMicroService(this IServiceCollection services,ServiceConfig serviceConfig)
+        {
+            //Swagger配置
+            services.AddSwaggerGen(option =>
+            {
+                option.SwaggerDoc(serviceConfig.Name, new Info
+                {
+                    Title = serviceConfig.DisplayName,
+                    Version = serviceConfig.Version
+                });
+                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+                var xmlPath = Path.Combine(basePath, serviceConfig.XmlName);
+                option.IncludeXmlComments(xmlPath);
+            });
+                        //跨域配置
+            services.AddCors(opt =>
+            {
+                opt.AddPolicy("AllowDomain", builder =>
+                {
+                    builder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin().AllowCredentials();
+                });
+            });
+        }
+
+
         public static void UseMicroService(this IApplicationBuilder app, IApplicationLifetime lifetime, ServiceConfig serviceInfo)
         {
             //读取配置文件
@@ -54,6 +83,8 @@ namespace Limited.MicroService
                     await context.Response.WriteAsync("ok");
                 });
             });
+
+            
         }
 
         public static void UseMicroService(this IApplicationBuilder app, IApplicationLifetime lifetime, Action<ServiceConfig> action)
