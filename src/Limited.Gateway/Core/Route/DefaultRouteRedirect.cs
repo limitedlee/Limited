@@ -31,6 +31,12 @@ namespace Limited.Gateway.Core.Route
                 //如 /base/member/add  服务名为base
                 var serviceName = string.Empty;
                 var path = message.Context.Request.Path.Value.TrimStart('/');
+                if (path.Length == 0)
+                {
+                    message.ResponseMessage.StatusCode = System.Net.HttpStatusCode.Forbidden;
+                    return message;
+                }
+
                 var indexFirstSeparator = path.IndexOf('/');
                 serviceName = path.Substring(0, indexFirstSeparator).ToLower();
                 if (serviceName.Length == 0)
@@ -42,7 +48,8 @@ namespace Limited.Gateway.Core.Route
                 {
                     HttpMethods = new string[2] { "Get", "Post" },
                     SourcePathRegex = "/" + serviceName + "/{something}",
-                    TargetPathRegex = "/" + serviceName + "/{something}",
+                    //TargetPathRegex = "/" + serviceName + "/{something}",
+                    TargetPathRegex = "/api/{something}",
                     TargetService = serviceName
                 };
             }

@@ -48,7 +48,7 @@ namespace Limited.Gateway
                 foreach (var s in ServiceCache.Services)
                 {
                     var v = s.Value.ToArray()[0];
-                    opts.SwaggerEndpoint($"/{s.Key}/swagger.json", v.DisplayName);
+                    opts.SwaggerEndpoint($"/{s.Key}/{s.Key}-swagger.json", v.DisplayName);
                 }
             });
         }

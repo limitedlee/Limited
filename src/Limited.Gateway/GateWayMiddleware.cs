@@ -1,20 +1,9 @@
-﻿using Consul;
+﻿using Limited.Gateway.Core.Communication;
+using Limited.Gateway.Core.Route;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Linq;
-using System.Net.Http;
-using System.IO;
 using System.Net;
-using System.Text;
-using Limited.Gateway.Core.ServiceDiscovery;
-using Limited.Gateway.Core.Communication;
-using Limited.Gateway.Core.Route;
+using System.Threading.Tasks;
 
 namespace Limited.Gateway
 {
@@ -50,7 +39,11 @@ namespace Limited.Gateway
                 var message = new LimitedMessage(context);
                 await message.MapRequest(context);
                 message = await route.Redirect(message);
-                message = await messageSender.Sender(message);
+                if (message.ResponseMessage.StatusCode == HttpStatusCode.OK)
+                {
+                    message = await messageSender.Sender(message);
+                }
+
                 message.MapResponse(ref context);
             }
         }

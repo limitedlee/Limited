@@ -85,8 +85,11 @@ namespace Limited.MicroService
             {
                 //app.UseSwagger();
                 //app.UseSwaggerUI(c => { c.SwaggerEndpoint($"/api/swagger.json", serviceInfo.Name); });
-                app.UseSwagger(opt => { opt.RouteTemplate = "{documentName}/swagger.json"; });
-                app.UseSwaggerUI(opt => { opt.SwaggerEndpoint($"/{serviceInfo.Name.ToLower()}/swagger.json", serviceInfo.DisplayName); });
+                //app.UseSwagger(opt => { opt.RouteTemplate = "{documentName}/swagger.json"; });
+                //app.UseSwaggerUI(opt => { opt.SwaggerEndpoint($"/{serviceInfo.Name.ToLower()}/swagger.json", serviceInfo.DisplayName); });
+
+                app.UseSwagger(opt => { opt.RouteTemplate = "api/{documentName}-swagger.json"; });
+                app.UseSwaggerUI(opt => { opt.SwaggerEndpoint($"/api/{serviceInfo.Name.ToLower()}-swagger.json", serviceInfo.DisplayName); });
             }
 
             app.UseAuthentication();
