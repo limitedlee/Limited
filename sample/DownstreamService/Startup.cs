@@ -22,7 +22,7 @@ namespace DownstreamService
             service.Version = "1.0";
             service.XmlName = "DownstreamService.xml";
             service.LocalAddress = Configuration.GetSection("ServiceAddress").Value;
-            service.DCAddress = "http://192.168.3.22:8500";
+            service.DCAddress = "http://master.rpdns.com:8500";
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
