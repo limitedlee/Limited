@@ -14,30 +14,6 @@ namespace ApiGateway
     {
         public static void Main(string[] args)
         {
-
-            var items = new List<Limited.Gateway.RouteOption>();
-
-            var baseRoute = new Limited.Gateway.RouteOption()
-            {
-                SourcePathRegex = @"/a/{everything}",
-                TargetService = "DownstreamService",
-                TargetPathRegex = @"/api/{everything}",
-                Version = "1.0"
-            };
-
-            items.Add(baseRoute);
-
-            var orderRoute = new Limited.Gateway.RouteOption()
-            {
-                SourcePathRegex = @"OrderApi/\w*",
-                TargetService = "Order",
-                TargetPathRegex = @"Order/\w*",
-                Version = "1.0"
-            };
-            items.Add(orderRoute);
-
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(items);
-
             CreateWebHostBuilder(args).Build().Run();
         }
 

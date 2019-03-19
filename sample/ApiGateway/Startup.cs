@@ -37,7 +37,7 @@ namespace ApiGateway
             }
 
             app.UseMiddleware<RequestCheckMiddleware>();
-            app.UseGateway();
+            app.UseGateway(Configuration.GetSection("GatewayConfig:ConsulUrl").Value);
             //app.UseHttpsRedirection();
             app.UseMvc();
         }

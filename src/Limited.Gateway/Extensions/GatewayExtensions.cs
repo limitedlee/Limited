@@ -14,20 +14,9 @@ namespace Limited.Gateway
 {
     public static class GatewayExtensions
     {
-        private static string ConsulUrl = default;
-
         public static void AddGateway(this IServiceCollection services)
         {
-            var configBuilder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
-            var configuration = configBuilder.Build();
-
-            if (configuration.GetSection("GatewayConfig:ConsulUrl").Value == null)
-            {
-                throw new ConfigException("undefine 'GatewayConfig' node in appsettings.json file!");
-            }
             services.AddSwaggerGen(opt => { opt.SwaggerDoc("Gate", new Info { Title = "网关服务", Version = "v1" }); });
-
-            ConsulUrl = configuration.GetSection("GatewayConfig:ConsulUrl").Value;
             services.AddSingleton<RouteTable>();
             services.AddTransient<Microsoft.Extensions.Hosting.IHostedService, ServiceTask>();
             services.AddSingleton<IMessageSender, DefaultHttpMessageSender>();
@@ -36,10 +25,10 @@ namespace Limited.Gateway
             services.AddHttpClient();
         }
 
-        public static void UseGateway(this IApplicationBuilder app)
+        public static void UseGateway(this IApplicationBuilder app, string consulUrl)
         {
             app.UseMiddleware<GateWayMiddleware>();
-            app.UseConsul(ConsulUrl);
+            app.UseConsul(consulUrl);
 
             ServiceTask.RoundRobinService();
             app.UseSwagger();
