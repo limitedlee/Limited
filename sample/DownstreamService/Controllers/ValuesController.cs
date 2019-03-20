@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
 using System.Collections.Generic;
 
@@ -55,6 +56,18 @@ namespace DownstreamService.Controllers
             Console.WriteLine($"{DateTime.Now.ToString()}----{str.ToString()}");
 
             return "ok";
+        }
+
+        /// <summary>
+        /// 测试SwaggerResponse
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [Route("x")]
+        [SwaggerResponse(200, Type = typeof(p))]
+        public dynamic GetItems()
+        {
+            return BadRequest("请选择");
         }
     }
 
