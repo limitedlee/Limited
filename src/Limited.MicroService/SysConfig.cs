@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace Limited.MicroService
@@ -54,13 +55,8 @@ namespace Limited.MicroService
         public string ServiceDiscoveryAddress { get; set; } = "http://127.0.0.1:8500";
 
         /// <summary>
-        /// 数据库链接字符串
+        /// 寄存器,用于扩展使用
         /// </summary>
-        public string DatabaseConnectionString { get; set; }
-
-        /// <summary>
-        /// 缓存链接字符串
-        /// </summary>
-        public string CacheConnectionString { get; set; }
+        public Dictionary<string, string> Register { get; set; } = new Dictionary<string, string>();
     }
 }
