@@ -10,13 +10,13 @@ namespace DownstreamService
     public class Startup
     {
         public IConfiguration Configuration { get; }
-        private ServiceConfig service;
+        private SysConfig service;
 
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
             
-            service=new ServiceConfig();
+            service=new SysConfig();
             service.Name = "order";
             service.DisplayName = "订单服务";
             service.Version = "1.0";

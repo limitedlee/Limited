@@ -13,7 +13,7 @@ namespace Limited.MicroService
 {
     public static class MicroServiceExtension
     {
-        public static void AddMicroService(this IServiceCollection services, ServiceConfig serviceConfig)
+        public static void AddMicroService(this IServiceCollection services, SysConfig serviceConfig)
         {
             //Swagger配置
             services.AddSwaggerGen(option =>
@@ -39,7 +39,7 @@ namespace Limited.MicroService
         }
 
         public static void UseMicroService(this IApplicationBuilder app, IHostingEnvironment env,
-            IApplicationLifetime lifetime, ServiceConfig serviceInfo)
+            IApplicationLifetime lifetime, SysConfig serviceInfo)
         {
             //读取配置文件
             var configBuilder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
@@ -50,7 +50,7 @@ namespace Limited.MicroService
             var ip = serviceInfo.LocalAddress.Split(':')[0];
             var port = serviceInfo.LocalAddress.Split(':')[1];
 
-            using (var consulClient = new ConsulClient(x => { x.Address = new Uri(serviceInfo.DCAddress); }))
+            using (var consulClient = new ConsulClient(x => { x.Address = new Uri(serviceInfo.ServiceDiscoveryAddress); }))
             {
                 var asr = new AgentServiceRegistration
                 {
@@ -73,7 +73,7 @@ namespace Limited.MicroService
             //注销Consul 
             lifetime.ApplicationStopped.Register(() =>
             {
-                using (var consulClient = new ConsulClient(x => { x.Address = new Uri(serviceInfo.DCAddress); }))
+                using (var consulClient = new ConsulClient(x => { x.Address = new Uri(serviceInfo.ServiceDiscoveryAddress); }))
                 {
                     consulClient.Agent.ServiceDeregister(serviceId).Wait(); //从consul集群中移除服务
                 }
@@ -83,11 +83,6 @@ namespace Limited.MicroService
 
             if (!env.IsProduction())
             {
-                //app.UseSwagger();
-                //app.UseSwaggerUI(c => { c.SwaggerEndpoint($"/api/swagger.json", serviceInfo.Name); });
-                //app.UseSwagger(opt => { opt.RouteTemplate = "{documentName}/swagger.json"; });
-                //app.UseSwaggerUI(opt => { opt.SwaggerEndpoint($"/{serviceInfo.Name.ToLower()}/swagger.json", serviceInfo.DisplayName); });
-
                 app.UseSwagger(opt => { opt.RouteTemplate = "api/{documentName}-swagger.json"; });
                 app.UseSwaggerUI(opt => { opt.SwaggerEndpoint($"/api/{serviceInfo.Name.ToLower()}-swagger.json", serviceInfo.DisplayName); });
             }
@@ -96,9 +91,9 @@ namespace Limited.MicroService
         }
 
         public static void UseMicroService(this IApplicationBuilder app, IHostingEnvironment env,
-            IApplicationLifetime lifetime, Action<ServiceConfig> action)
+            IApplicationLifetime lifetime, Action<SysConfig> action)
         {
-            var serviceInfo = new ServiceConfig();
+            var serviceInfo = new SysConfig();
             action.Invoke(serviceInfo);
             UseMicroService(app, env, lifetime, serviceInfo);
         }

@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
-
 
 namespace Limited.MicroService
 {
-    public class ServiceConfig
+    public class SysConfig
     {
         private string version;
 
@@ -54,6 +51,16 @@ namespace Limited.MicroService
         /// <summary>
         /// Consul服务地址
         /// </summary>
-        public string DCAddress { get; set; } = "http://127.0.0.1:8500";
+        public string ServiceDiscoveryAddress { get; set; } = "http://127.0.0.1:8500";
+
+        /// <summary>
+        /// 数据库链接字符串
+        /// </summary>
+        public string DatabaseConnectionString { get; set; }
+
+        /// <summary>
+        /// 缓存链接字符串
+        /// </summary>
+        public string CacheConnectionString { get; set; }
     }
 }
