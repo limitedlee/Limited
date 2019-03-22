@@ -48,8 +48,8 @@ namespace Limited.Gateway.Core.Route
                 {
                     HttpMethods = new string[2] { "Get", "Post" },
                     SourcePathRegex = "/" + serviceName + "/{something}",
-                    //TargetPathRegex = "/" + serviceName + "/{something}",
-                    TargetPathRegex = "/api/{something}",
+                    TargetPathRegex = "/" + serviceName + "/{something}",
+                    //TargetPathRegex = "/api/{something}",
                     TargetService = serviceName
                 };
             }

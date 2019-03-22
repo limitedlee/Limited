@@ -53,10 +53,5 @@ namespace Limited.MicroService
         /// Consul服务地址
         /// </summary>
         public string ServiceDiscoveryAddress { get; set; } = "http://127.0.0.1:8500";
-
-        /// <summary>
-        /// 寄存器,用于扩展使用
-        /// </summary>
-        public Dictionary<string, string> Register { get; set; } = new Dictionary<string, string>();
     }
 }

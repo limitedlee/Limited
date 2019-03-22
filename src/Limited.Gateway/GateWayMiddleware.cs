@@ -28,9 +28,10 @@ namespace Limited.Gateway
 
         public async Task Invoke(HttpContext context)
         {
+            var hasSwaggerJson = context.Request.Path.Value.ToLower().IndexOf("swagger.json") > -1;
 
             if (context.Request.Path.Value.ToLower().IndexOf("/swagger") > -1
-                && context.Request.Path.Value.ToLower().IndexOf("swagger.json")==-1)
+                && !hasSwaggerJson)
             {
                 await next(context);
             }
@@ -38,7 +39,17 @@ namespace Limited.Gateway
             {
                 var message = new LimitedMessage(context);
                 await message.MapRequest(context);
-                message = await route.Redirect(message);
+
+                if (hasSwaggerJson)
+                {
+                    var swaggerRoute = new SwaggerRouteRedirect();
+                    message = await swaggerRoute.Redirect(message);
+                }
+                else
+                {
+                    message = await route.Redirect(message);
+                }
+
                 if (message.ResponseMessage.StatusCode == HttpStatusCode.OK)
                 {
                     message = await messageSender.Sender(message);
