@@ -1,5 +1,4 @@
-﻿using Consul;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -28,20 +27,20 @@ namespace Limited.Gateway
                     if (Cache == null)
                     {
                         Cache = new ConcurrentBag<RouteOption>();
-                        var result = ConsulHelper.Client.KV.Get(RouteCacheKey);
-                        Task.WaitAny(result);
+                        //var result = ConsulHelper.Client.KV.Get(RouteCacheKey);
+                        //Task.WaitAny(result);
 
-                        if (result.Result.Response != null)
-                        {
-                            var json = Encoding.UTF8.GetString(result.Result.Response.Value);
-                            var routes = Newtonsoft.Json.JsonConvert.DeserializeObject<List<RouteOption>>(json);
+                        //if (result.Result.Response != null)
+                        //{
+                        //    var json = Encoding.UTF8.GetString(result.Result.Response.Value);
+                        //    var routes = Newtonsoft.Json.JsonConvert.DeserializeObject<List<RouteOption>>(json);
 
-                            Parallel.ForEach(routes, route =>
-                             {
-                                 route.TargetService = route.TargetService.ToLower();
-                                 Cache.Add(route);
-                             });
-                        }
+                        //    Parallel.ForEach(routes, route =>
+                        //     {
+                        //         route.TargetService = route.TargetService.ToLower();
+                        //         Cache.Add(route);
+                        //     });
+                        //}
 
                     }
                 }
@@ -54,11 +53,11 @@ namespace Limited.Gateway
 
         public async Task Push(List<RouteOption> routes)
         {
-            var kvp = new KVPair(RouteCacheKey);
-            var dataBuffer = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(routes));
-            kvp.Value = dataBuffer;
+            //var kvp = new KVPair(RouteCacheKey);
+            //var dataBuffer = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(routes));
+            //kvp.Value = dataBuffer;
 
-            await ConsulHelper.Client.KV.Put(kvp);
+            //await ConsulHelper.Client.KV.Put(kvp);
         }
     }
 }

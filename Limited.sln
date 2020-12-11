@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.106
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E79BBE30-1149-4C5A-A644-0F44F36CD5A7}"
 EndProject
@@ -10,12 +10,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApiGateway", "sample\ApiGateway\ApiGateway.csproj", "{CB986DDE-3EA0-444B-B833-E3E380C9CBCD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DownstreamService", "sample\DownstreamService\DownstreamService.csproj", "{A8DFF574-4673-47BD-801D-D6CE6158E309}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Consul", "Consul", "{5090D7A9-2A8C-40AB-98E8-50583DE77ED4}"
-	ProjectSection(SolutionItems) = preProject
-		sample\Consul\consul.exe = sample\Consul\consul.exe
-		sample\Consul\RunConsul.bat = sample\Consul\RunConsul.bat
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Limited.Gateway", "src\Limited.Gateway\Limited.Gateway.csproj", "{6FB5CDEF-B816-41FC-84D5-BE97321C2E0A}"
 EndProject
@@ -68,7 +62,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{CB986DDE-3EA0-444B-B833-E3E380C9CBCD} = {7F7034F9-A40F-4ED4-B0DE-BBF6D5DD2EF7}
 		{A8DFF574-4673-47BD-801D-D6CE6158E309} = {7F7034F9-A40F-4ED4-B0DE-BBF6D5DD2EF7}
-		{5090D7A9-2A8C-40AB-98E8-50583DE77ED4} = {7F7034F9-A40F-4ED4-B0DE-BBF6D5DD2EF7}
 		{6FB5CDEF-B816-41FC-84D5-BE97321C2E0A} = {E79BBE30-1149-4C5A-A644-0F44F36CD5A7}
 		{81634A12-88F9-43C4-ACE0-40115A15E64A} = {E79BBE30-1149-4C5A-A644-0F44F36CD5A7}
 	EndGlobalSection

@@ -25,10 +25,10 @@ namespace Limited.Gateway
             services.AddHttpClient();
         }
 
-        public static void UseGateway(this IApplicationBuilder app, string consulUrl)
+        public static void UseGateway(this IApplicationBuilder app, string discoveryUrl)
         {
             app.UseMiddleware<GateWayMiddleware>();
-            app.UseConsul(consulUrl);
+            app.UseDiscovery(discoveryUrl);
 
             ServiceTask.RoundRobinService();
             app.UseSwagger();
